@@ -107,6 +107,19 @@ const ZOMBIES={
   cone:  {name:'路障僵尸', hp:570,  speed:26},
   bucket:{name:'铁桶僵尸', hp:1300, speed:20},
   flag:  {name:'旗帜僵尸', hp:200,  speed:26},
+  mars:  {name:'火星',  hp:500,  speed:24},
+  uranus:{name:'天王星',hp:1100, speed:14},
+  sun:   {name:'太阳',  hp:2200, speed:10},
+};
+// 第3关·星空战场：太阳系星球敌军（关卡 theme==='space' 时套用，水星=basic位/金星=cone位/土星=flag位）
+const SPACE_ENEMIES={
+  basic: {name:'水星',  hp:160,  speed:30},
+  cone:  {name:'金星',  hp:480,  speed:25},
+  mars:  {name:'火星',  hp:500,  speed:24},
+  bucket:{name:'木星',  hp:1300, speed:13},
+  uranus:{name:'天王星',hp:1100, speed:14},
+  flag:  {name:'土星',  hp:900,  speed:16},
+  sun:   {name:'太阳',  hp:2200, speed:10},
 };
 const ZOMBIE_TYPES=['basic','cone','bucket','flag'];
 
@@ -141,6 +154,23 @@ const LEVELS=[
       [{z:'basic',n:3},{z:'cone',n:2},{z:'bucket',n:2},{z:'flag',n:1}],
       [{z:'basic',n:3},{z:'cone',n:2},{z:'bucket',n:2}],
       [{z:'basic',n:4},{z:'cone',n:3},{z:'bucket',n:3},{z:'flag',n:1}],
+    ],
+  },
+  {
+    id:3, name:'第 3 关 · 星空战场', theme:'space', sunType:'star', startSun:125, sunFall:7.5,
+    waves:[
+      [{z:'basic',n:2}],
+      [{z:'basic',n:3}],
+      [{z:'basic',n:2},{z:'cone',n:1}],
+      [{z:'basic',n:2},{z:'mars',n:2}],
+      [{z:'basic',n:3},{z:'mars',n:1},{z:'flag',n:1}],
+      [{z:'basic',n:2},{z:'mars',n:2},{z:'bucket',n:1}],
+      [{z:'basic',n:2},{z:'mars',n:1},{z:'uranus',n:2}],
+      [{z:'basic',n:3},{z:'cone',n:2},{z:'bucket',n:1}],
+      [{z:'basic',n:2},{z:'mars',n:2},{z:'bucket',n:2}],
+      [{z:'basic',n:3},{z:'uranus',n:2},{z:'bucket',n:1},{z:'flag',n:1}],
+      [{z:'basic',n:3},{z:'mars',n:2},{z:'bucket',n:2},{z:'uranus',n:1}],
+      [{z:'basic',n:4},{z:'mars',n:3},{z:'bucket',n:2},{z:'sun',n:1},{z:'flag',n:1}],
     ],
   },
 ];
@@ -340,11 +370,12 @@ function killZombie(z,dmg){
 
 // ---------- 僵尸 ----------
 function spawnZombie(type){
-  const d=ZOMBIES[type];
+  const themed=(G.level&&G.level.theme==='space'&&SPACE_ENEMIES[type])||null;
+  const d=themed||ZOMBIES[type];
   const row=irand(0,ROWS-1);
   G.zombies.push({type,row,x:SPAWN_X+rand(-30,30),hp:d.hp,spd:d.speed*(0.92+Math.random()*0.16),
     state:'walk',t:rand(0,10),hitT:0,knock:0,dying:false,deathT:0,flagRaise:0,eatSnd:0,wave:0});
-  S.groan();
+  if(themed){ tone(240,0.4,'sine',0.08,-180); } else { S.groan(); }
 }
 function updateZombies(dt){
   for(const z of G.zombies){
@@ -402,7 +433,10 @@ function updateZombies(dt){
 function startWave(){
   const w=G.level.waves[G.waveIndex];
   const isFlag=w.some(e=>e.z==='flag');
-  G.banner={text:isFlag?'🌊 一大波僵尸正在接近！':'第 '+(G.waveIndex+1)+' 波僵尸来袭',t:2.2,big:isFlag};
+  const sp=G.level.theme==='space';
+  const txt=isFlag?(sp?'🪐 一大波星球正在接近！':'🌊 一大波僵尸正在接近！')
+    :(sp?'第 '+(G.waveIndex+1)+' 波星球来袭':'第 '+(G.waveIndex+1)+' 波僵尸来袭');
+  G.banner={text:txt,t:2.2,big:isFlag};
   let delay=isFlag?3.5:2.2;
   G.pendingZombies=[];
   for(const e of w){
@@ -455,7 +489,8 @@ function checkWin(){
 
 // ---------- 绘制：背景 ----------
 function drawBackground(t){
-  const day=G.level?(G.level.theme==='day'):true;
+  const theme=G.level?(G.level.theme):'day';
+  const day=theme==='day', space=theme==='space';
   // 天空
   if(day){
     const g=ctx.createLinearGradient(0,0,0,H);
@@ -464,6 +499,33 @@ function drawBackground(t){
     // 太阳
     ctx.fillStyle='#fff3b0'; ctx.beginPath(); ctx.arc(W-70,52,26,0,TAU); ctx.fill();
     ctx.fillStyle='rgba(255,243,176,0.35)'; ctx.beginPath(); ctx.arc(W-70,52,40,0,TAU); ctx.fill();
+  }else if(space){
+    // 深邃星空
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#07041a'); g.addColorStop(0.55,'#140b33'); g.addColorStop(1,'#1d1240');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    // 星云
+    const neb1=ctx.createRadialGradient(160,60,5,160,60,150);
+    neb1.addColorStop(0,'rgba(150,80,220,0.28)'); neb1.addColorStop(1,'rgba(150,80,220,0)');
+    ctx.fillStyle=neb1; ctx.fillRect(0,0,W,220);
+    const neb2=ctx.createRadialGradient(660,90,5,660,90,130);
+    neb2.addColorStop(0,'rgba(60,180,220,0.22)'); neb2.addColorStop(1,'rgba(60,180,220,0)');
+    ctx.fillStyle=neb2; ctx.fillRect(0,0,W,220);
+    // 星星（含闪光大星）
+    for(let i=0;i<46;i++){
+      const sx=(i*137.5+40)%W, sy=(i*71.3+10)%78;
+      ctx.globalAlpha=0.35+0.65*Math.abs(Math.sin(t*0.8+i*1.3));
+      ctx.fillStyle=i%7===0?'#ffe9a8':'#dfe9ff';
+      if(i%7===0){ ctx.beginPath(); ctx.arc(sx,sy,2.2,0,TAU); ctx.fill(); }
+      else ctx.fillRect(sx,sy,1.8,1.8);
+    }
+    ctx.globalAlpha=1;
+    // 远处行星（氛围）
+    ctx.fillStyle='#b07844'; ctx.beginPath(); ctx.arc(W-170,46,10,0,TAU); ctx.fill();
+    ctx.fillStyle='#e8c49a'; ctx.beginPath(); ctx.arc(W-170,46,10,0,TAU); ctx.fill();
+    ctx.strokeStyle='rgba(232,196,154,0.8)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.ellipse(W-170,46,16,4,-0.4,0,TAU); ctx.stroke();
+    ctx.fillStyle='#5fa8c4'; ctx.beginPath(); ctx.arc(96,44,7,0,TAU); ctx.fill();
   }else{
     const g=ctx.createLinearGradient(0,0,0,H);
     g.addColorStop(0,'#0b1026'); g.addColorStop(1,'#1d2b4d');
@@ -480,10 +542,10 @@ function drawBackground(t){
     ctx.fillStyle='#2a3b63'; ctx.beginPath(); ctx.arc(W-60,46,18,0,TAU); ctx.fill();
     ctx.fillStyle='rgba(244,241,214,0.25)'; ctx.beginPath(); ctx.arc(W-70,52,36,0,TAU); ctx.fill();
   }
-  // 左侧房子（砖墙）
-  ctx.fillStyle=day?'#b06a4a':'#6a4a3a';
+  // 左侧房子（砖墙：白天红砖 / 夜晚深棕 / 星空银紫）
+  ctx.fillStyle=day?'#b06a4a':(space?'#4a3a68':'#6a4a3a');
   ctx.fillRect(0,LAWN_Y-14,LAWN_X+14,H-LAWN_Y+14);
-  ctx.fillStyle=day?'#9c5a3e':'#5a3d30';
+  ctx.fillStyle=day?'#9c5a3e':(space?'#3a2c56':'#5a3d30');
   for(let y=LAWN_Y;y<H;y+=16){
     for(let x=0;x<LAWN_X+14;x+=22){
       const off=(Math.floor(y/16)%2)*11;
@@ -494,12 +556,13 @@ function drawBackground(t){
   for(let r=0;r<ROWS;r++){
     for(let c=0;c<COLS;c++){
       const on=(r+c)%2===0;
-      ctx.fillStyle=day?(on?'#7ccb57':'#6cbd4b'):(on?'#274a35':'#21412e');
+      ctx.fillStyle=day?(on?'#7ccb57':'#6cbd4b')
+        :(space?(on?'#2a3d5c':'#243450'):(on?'#274a35':'#21412e'));
       ctx.fillRect(LAWN_X+c*CELL_W,LAWN_Y+r*CELL_H,CELL_W,CELL_H);
     }
   }
   // 网格线
-  ctx.strokeStyle=day?'rgba(40,90,30,0.35)':'rgba(80,140,90,0.25)';
+  ctx.strokeStyle=day?'rgba(40,90,30,0.35)':(space?'rgba(120,160,220,0.3)':'rgba(80,140,90,0.25)');
   ctx.lineWidth=1;
   for(let c=1;c<COLS;c++){ ctx.beginPath(); ctx.moveTo(LAWN_X+c*CELL_W,LAWN_Y); ctx.lineTo(LAWN_X+c*CELL_W,LAWN_Y+GRID_H); ctx.stroke(); }
   for(let r=1;r<ROWS;r++){ ctx.beginPath(); ctx.moveTo(LAWN_X,LAWN_Y+r*CELL_H); ctx.lineTo(LAWN_X+GRID_W,LAWN_Y+r*CELL_H); ctx.stroke(); }
@@ -780,7 +843,134 @@ function drawZombie(c,x,y,t,z){
   c.restore();
 }
 
-// ---------- 绘制：阳光/月光 ----------
+// ---------- 绘制：太阳系星球敌军 ----------
+function planetMeta(type){
+  if(type==='mercury') return {R:13, col:['#cfc4b4','#8a7f6e']};
+  if(type==='venus')   return {R:15, col:['#f5e6a8','#c9a94e']};
+  if(type==='mars')    return {R:15, col:['#e8805a','#9c3d22']};
+  if(type==='jupiter') return {R:24, col:['#e8c49a','#b07844']};
+  if(type==='uranus')  return {R:20, col:['#bfe8e4','#5fa8c4']};
+  if(type==='saturn')  return {R:18, col:['#f0dcae','#c9a15e']};
+  if(type==='sun')     return {R:26, col:['#ffd166','#ff8c2a']};
+  return {R:16, col:['#dfe9ff','#9aa8c8']};
+}
+function drawPlanetTexture(c,type,R,roll){
+  c.save();
+  if(type==='mercury'){
+    c.fillStyle='rgba(90,80,70,0.5)';
+    for(let i=0;i<6;i++){
+      const a=i*1.1+roll, rr0=(Math.sin(i*2.3)*0.5+0.5)*R*0.6;
+      c.beginPath(); c.arc(Math.cos(a)*rr0,Math.sin(a)*rr0,2.2,0,TAU); c.fill();
+    }
+  }else if(type==='venus'){
+    c.strokeStyle='rgba(190,150,60,0.6)'; c.lineWidth=2;
+    for(let i=0;i<3;i++){
+      const y=-R+i*R*0.6+(Math.sin(roll+i)*4);
+      c.beginPath(); c.moveTo(-R,y); c.quadraticCurveTo(0,y+6*Math.sin(roll+i),R,y); c.stroke();
+    }
+  }else if(type==='mars'){
+    c.fillStyle='rgba(120,40,20,0.55)';
+    c.beginPath(); c.ellipse(-4+roll*2,3,4,3,0,0,TAU); c.fill();
+    c.beginPath(); c.ellipse(6-roll*2,-5,3,2.4,0,0,TAU); c.fill();
+    c.fillStyle='rgba(255,240,230,0.8)';
+    c.beginPath(); c.ellipse(-5,-9,6,2.5,-0.2,0,TAU); c.fill();
+  }else if(type==='jupiter'){
+    c.fillStyle='rgba(170,120,70,0.5)';
+    for(let i=0;i<5;i++){
+      const y=-R+i*R*0.45;
+      c.fillRect(-R,y,R*2,3.4);
+    }
+    c.fillStyle='rgba(200,80,50,0.85)';
+    c.beginPath(); c.ellipse(roll%R-2,3,7,4.5,-0.3,0,TAU); c.fill();
+  }else if(type==='uranus'){
+    c.fillStyle='rgba(90,170,200,0.5)';
+    for(let i=0;i<3;i++){
+      const x=-R+i*R*0.6;
+      c.fillRect(x,-R,3,R*2);
+    }
+  }else if(type==='saturn'){
+    c.fillStyle='rgba(200,160,90,0.45)';
+    for(let i=0;i<3;i++){
+      const y=-R+i*R*0.5;
+      c.fillRect(-R,y,R*2,3);
+    }
+  }else if(type==='sun'){
+    c.fillStyle='rgba(220,120,30,0.55)';
+    c.beginPath(); c.arc(-5+roll*3,2,4,0,TAU); c.fill();
+    c.beginPath(); c.arc(6-roll*2,-6,3,0,TAU); c.fill();
+  }
+  c.restore();
+}
+function drawPlanet(c,x,y,t,z){
+  const dying=z.dying;
+  const meta=planetMeta(z.type);
+  const R=meta.R, col=meta.col;
+  c.save(); c.translate(x,y);
+  let alpha=1,scale=1;
+  if(dying){ const p=clamp(z.deathT/0.9,0,1); alpha=1-p; scale=1-0.45*p; c.globalAlpha=Math.max(0,alpha); }
+  const eating=z.state==='eat';
+  const bob=dying?0:Math.sin(z.t*3.2)*3;
+  const bounce=eating?Math.abs(Math.sin(z.t*8))*5:0;
+  const tilt=dying?0:Math.sin(z.t*1.3)*0.05;
+  // 阴影
+  c.fillStyle='rgba(0,0,0,0.28)';
+  c.beginPath(); c.ellipse(0,8,R*1.15,6,0,0,TAU); c.fill();
+  c.translate(0,-bob-bounce);
+  c.rotate(tilt);
+  const roll=z.t*0.6;
+  // 太阳光晕
+  if(z.type==='sun'){
+    const pulse=0.3+0.15*Math.sin(z.t*6);
+    const sg=c.createRadialGradient(0,0,R*0.6,0,0,R*2.1);
+    sg.addColorStop(0,'rgba(255,200,90,'+(0.5+pulse)+')'); sg.addColorStop(1,'rgba(255,200,90,0)');
+    c.fillStyle=sg; c.fillRect(-R*2.2,-R*2.2,R*4.4,R*4.4);
+  }
+  // 星体
+  const g=c.createRadialGradient(-R*0.3,-R*0.4,R*0.15,0,0,R*1.05);
+  g.addColorStop(0,col[0]); g.addColorStop(1,col[1]);
+  c.fillStyle=g;
+  c.beginPath(); c.arc(0,0,R*scale,0,TAU); c.fill();
+  c.strokeStyle='rgba(0,0,0,0.35)'; c.lineWidth=1.5; c.stroke();
+  // 纹理（裁剪在球内）
+  c.save(); c.beginPath(); c.arc(0,0,R*scale,0,TAU); c.clip();
+  drawPlanetTexture(c,z.type,R*scale,roll);
+  c.restore();
+  // 土星环
+  if(z.type==='saturn'){
+    c.strokeStyle='rgba(232,196,140,0.95)'; c.lineWidth=4.5;
+    c.beginPath(); c.ellipse(0,0,R*1.55,R*0.45,-0.35,0,TAU); c.stroke();
+    c.strokeStyle='rgba(255,240,200,0.7)'; c.lineWidth=2;
+    c.beginPath(); c.ellipse(0,0,R*1.55,R*0.45,-0.35,0,TAU); c.stroke();
+  }
+  // 脸（保持正向，可爱/坚定）
+  c.save(); c.rotate(-tilt);
+  const fR=R*0.34;
+  const eyeY=-R*0.15;
+  c.fillStyle='#fff';
+  c.beginPath(); c.ellipse(-R*0.38,eyeY,fR,fR*1.1,0,0,TAU); c.fill();
+  c.beginPath(); c.ellipse(R*0.38,eyeY,fR,fR*1.1,0,0,TAU); c.fill();
+  c.fillStyle='#241a10';
+  c.beginPath(); c.arc(-R*0.38+ (dying?0:Math.sin(z.t*4)*0.5),eyeY,fR*0.45,0,TAU); c.fill();
+  c.beginPath(); c.arc(R*0.38+ (dying?0:Math.cos(z.t*4)*0.5),eyeY,fR*0.45,0,TAU); c.fill();
+  // 嘴：吃食时张开
+  if(eating){
+    c.fillStyle='#5a2c10';
+    c.beginPath(); c.ellipse(0,R*0.28,fR*0.6,fR*0.8,0,0,TAU); c.fill();
+  }else{
+    c.strokeStyle='#241a10'; c.lineWidth=2;
+    c.beginPath(); c.arc(0,R*0.3,fR*0.55,0.15*Math.PI,0.85*Math.PI); c.stroke();
+  }
+  c.restore();
+  // 受击白闪
+  if(z.hitT>0){
+    c.globalAlpha=Math.min(alpha,0.5);
+    c.fillStyle='#fff';
+    c.beginPath(); c.arc(0,0,R+1,0,TAU); c.fill();
+  }
+  c.restore();
+}
+
+// ---------- 绘制：阳光/月光/星光 ----------
 function drawSunOrb(c,x,y,t,color,moon){
   const r=26;
   c.save(); c.translate(x,y);
@@ -825,6 +1015,7 @@ function drawMower(c,x,y,t){
   c.restore();
 }
 
+function sunColor(){ return G.level.sunType==='sun'?'#ffd93d':(G.level.sunType==='moon'?'#cfe8ff':'#ffe9a8'); }
 // ---------- 绘制：HUD ----------
 const CARD_W=100,CARD_H=66,CARD_Y=10,CARD_X0=128,CARD_GAP=6;
 function drawHUD(){
@@ -833,7 +1024,7 @@ function drawHUD(){
   ctx.fillRect(0,0,W,88);
   ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=2; ctx.strokeRect(0,0,W,88);
   // 阳光计数
-  drawSunOrb(ctx,30,38,performance.now()/1000,G.level.sunType==='sun'?'#ffd93d':'#cfe8ff',G.level.sunType==='moon');
+  drawSunOrb(ctx,30,38,performance.now()/1000,sunColor(),G.level.sunType==='moon');
   ctx.fillStyle='#fff'; ctx.strokeStyle='rgba(0,0,0,0.6)'; ctx.lineWidth=3;
   ctx.font='bold 30px "Microsoft YaHei",sans-serif'; ctx.textAlign='left'; ctx.textBaseline='middle';
   ctx.strokeText(G.sun,52,40); ctx.fillText(G.sun,52,40);
@@ -984,14 +1175,19 @@ function render(t){
       ctx.fillStyle='#eaf7d8';
       ctx.beginPath(); ctx.arc(s.x-1.5,s.y-9.5,1.6,0,TAU); ctx.fill();
     }
-    // 僵尸
+    // 僵尸/星球
     const zs=[...G.zombies].sort((a,b)=>(b.row===a.row?b.x-a.x:a.row-b.row));
-    for(const z of zs) drawZombie(ctx,z.x,LAWN_Y+z.row*CELL_H+CELL_H-8,z.t,z);
-    // 阳光
+    const sp=G.level&&G.level.theme==='space';
+    for(const z of zs){
+      const zy=LAWN_Y+z.row*CELL_H+CELL_H-8;
+      if(sp) drawPlanet(ctx,z.x,zy,z.t,z);
+      else drawZombie(ctx,z.x,zy,z.t,z);
+    }
+    // 阳光/月光/星光
     for(const s of G.suns){
       const fade=s.state==='ground'&&s.ttl<1.2?(s.ttl/1.2):1;
       ctx.globalAlpha=clamp(fade,0,1);
-      drawSunOrb(ctx,s.x,s.y,s.t,G.level.sunType==='sun'?'#ffd93d':'#cfe8ff',G.level.sunType==='moon');
+      drawSunOrb(ctx,s.x,s.y,s.t,sunColor(),G.level.sunType==='moon');
       ctx.globalAlpha=1;
     }
     // 粒子
@@ -1083,31 +1279,33 @@ function drawSelect(t){
   ctx.strokeStyle='rgba(0,0,0,0.8)'; ctx.lineWidth=7;
   ctx.strokeText('选择关卡',W/2,120);
   ctx.fillStyle='#fff'; ctx.fillText('选择关卡',W/2,120);
-  // 两个关卡卡片
+  // 三个关卡卡片
   const cards=[
-    {x:W/2-330,y:210,w:300,h:300,title:'第 1 关',sub:'白天草地',desc:'新手关 · 10 波僵尸',theme:'day',emoji:'🌞'},
-    {x:W/2+30,y:210,w:300,h:300,title:'第 2 关',sub:'月光之夜',desc:'进阶关 · 12 波僵尸',theme:'night',emoji:'🌙'},
+    {x:37,y:210,w:230,h:300,title:'第 1 关',sub:'白天草地',desc:'新手关 · 10 波僵尸',theme:'day',emoji:'🌞',l1:'僵尸：普通/路障/铁桶/旗帜'},
+    {x:285,y:210,w:230,h:300,title:'第 2 关',sub:'月光之夜',desc:'进阶关 · 12 波僵尸',theme:'night',emoji:'🌙',l1:'僵尸：普通/路障/铁桶/旗帜'},
+    {x:533,y:210,w:230,h:300,title:'第 3 关',sub:'星空战场',desc:'星球入侵 · 12 波',theme:'space',emoji:'🪐',l1:'星球：水星/金星/火星/木星/土星'},
   ];
   for(const cd of cards){
     const hover=G.mouse.x>cd.x&&G.mouse.x<cd.x+cd.w&&G.mouse.y>cd.y&&G.mouse.y<cd.y+cd.h;
-    ctx.fillStyle=cd.theme==='day'?'#8fd0f5':'#1d2b4d';
+    ctx.fillStyle=cd.theme==='day'?'#8fd0f5':(cd.theme==='night'?'#1d2b4d':'#2a1a4a');
     rr(ctx,cd.x,cd.y,cd.w,cd.h,16); ctx.fill();
     ctx.strokeStyle=hover?'#ffd93d':'rgba(255,255,255,0.35)'; ctx.lineWidth=hover?4:2;
     rr(ctx,cd.x,cd.y,cd.w,cd.h,16); ctx.stroke();
     ctx.fillStyle='#fff';
-    ctx.font='bold 30px "Microsoft YaHei",sans-serif';
-    ctx.fillText(cd.emoji+' '+cd.title,cd.x+cd.w/2,cd.y+60);
-    ctx.font='bold 24px "Microsoft YaHei",sans-serif';
-    ctx.fillText(cd.sub,cd.x+cd.w/2,cd.y+110);
-    ctx.font='16px "Microsoft YaHei",sans-serif';
-    ctx.fillStyle=cd.theme==='day'?'#1a3a1a':'#cfe8ff';
-    ctx.fillText(cd.desc,cd.x+cd.w/2,cd.y+150);
-    ctx.font='13px "Microsoft YaHei",sans-serif'; ctx.fillStyle=cd.theme==='day'?'#3a5a3a':'#9ab8d8';
-    ctx.fillText('僵尸：普通/路障/铁桶/旗帜',cd.x+cd.w/2,cd.y+185);
-    ctx.fillStyle=cd.theme==='day'?'#2c5a10':'#d8e8ff';
-    ctx.fillText('蘑菇：马勃/荧光/灵芝/毒蝇伞/松露',cd.x+cd.w/2,cd.y+215);
+    ctx.font='bold 26px "Microsoft YaHei",sans-serif';
+    ctx.fillText(cd.emoji+' '+cd.title,cd.x+cd.w/2,cd.y+56);
+    ctx.font='bold 22px "Microsoft YaHei",sans-serif';
+    ctx.fillText(cd.sub,cd.x+cd.w/2,cd.y+104);
+    ctx.font='15px "Microsoft YaHei",sans-serif';
+    ctx.fillStyle=cd.theme==='day'?'#1a3a1a':(cd.theme==='night'?'#cfe8ff':'#e8d8ff');
+    ctx.fillText(cd.desc,cd.x+cd.w/2,cd.y+144);
+    ctx.font='12px "Microsoft YaHei",sans-serif';
+    ctx.fillStyle=cd.theme==='day'?'#3a5a3a':(cd.theme==='night'?'#9ab8d8':'#b8a8e0');
+    ctx.fillText(cd.l1,cd.x+cd.w/2,cd.y+178);
+    ctx.fillStyle=cd.theme==='day'?'#2c5a10':(cd.theme==='night'?'#d8e8ff':'#ffe9a8');
+    ctx.fillText(cd.theme==='space'?'蘑菇们，守护地球！':'蘑菇：马勃/荧光/灵芝/毒蝇伞/松露',cd.x+cd.w/2,cd.y+210);
     if(hover){
-      ctx.fillStyle='rgba(255,217,61,0.25)'; rr(ctx,cd.x,cd.y,cd.w,cd.h,16); ctx.fill();
+      ctx.fillStyle='rgba(255,217,61,0.22)'; rr(ctx,cd.x,cd.y,cd.w,cd.h,16); ctx.fill();
     }
   }
 }
@@ -1242,8 +1440,10 @@ function handleClick(mx,my){
     return;
   }
   if(G.state==='select'){
-    if(mx>W/2-330&&mx<W/2-30&&my>210&&my<510){ startLevel(0); S.select(); }
-    else if(mx>W/2+30&&mx<W/2+330&&my>210&&my<510){ startLevel(1); S.select(); }
+    const boxes=[[37,267,0],[285,515,1],[533,763,2]];
+    for(const b of boxes){
+      if(mx>b[0]&&mx<b[1]&&my>210&&my<510){ startLevel(b[2]); S.select(); return; }
+    }
     return;
   }
   if(G.state==='win'||G.state==='lose'){
