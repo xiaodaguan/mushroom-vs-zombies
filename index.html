@@ -1356,14 +1356,19 @@ function drawIntro(t){
 function drawEnd(t,win){
   drawOverlay();
   ctx.textAlign='center'; ctx.textBaseline='middle';
+  const sp=G.level&&G.level.theme==='space';
+  const title=win?(sp?'🎉 星系保卫成功！':'🎉 蘑菇保卫成功！')
+    :(sp?'🌌 星球攻破了你的基地！':'🧠 僵尸吃掉了你的脑子！');
   ctx.font='bold 48px "Microsoft YaHei",sans-serif';
   ctx.strokeStyle='rgba(0,0,0,0.8)'; ctx.lineWidth=8;
-  const title=win?'🎉 蘑菇保卫成功！':'🧠 僵尸吃掉了你的脑子！';
   ctx.strokeText(title,W/2,180);
   ctx.fillStyle=win?'#ffe066':'#ff8c8c';
   ctx.fillText(title,W/2,180);
   ctx.font='20px "Microsoft YaHei",sans-serif'; ctx.fillStyle='#fff';
-  ctx.fillText('用时：'+Math.floor(G.time)+' 秒    击杀僵尸：'+G.kills+'    收获阳光：'+G.sunEarned,W/2,240);
+  const stats=sp
+    ?('用时：'+Math.floor(G.time)+' 秒    消灭星球：'+G.kills+'    收获星光：'+G.sunEarned)
+    :('用时：'+Math.floor(G.time)+' 秒    击杀僵尸：'+G.kills+'    收获阳光：'+G.sunEarned);
+  ctx.fillText(stats,W/2,240);
   // 按钮
   const btnY=win?340:320;
   const btns=[
