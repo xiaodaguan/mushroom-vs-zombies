@@ -100,7 +100,7 @@ const SEEDS={
   glow:   {name:'荧光菇',  cost:50,  cd:6,  hp:300,  key:'2', kind:'sun'    },
   reishi: {name:'灵芝',    cost:50,  cd:18, hp:4000, key:'3', kind:'wall'   },
   agaric: {name:'毒蝇伞',  cost:150, cd:28, hp:300,  key:'4', kind:'bomb',  arm:0.9, dmg:1800, radius:1 },
-  truffle:{name:'松露',    cost:25,  cd:18, hp:300,  key:'5', kind:'mine',  arm:14,  dmg:1800, radius:0 },
+  truffle:{name:'松露',    cost:25,  cd:18, hp:300,  key:'5', kind:'mine',  arm:10,  dmg:1800, radius:0 },
 };
 const ZOMBIES={
   basic: {name:'普通僵尸', hp:200,  speed:26},
@@ -726,7 +726,7 @@ function drawAgaric(c,x,y,t,sc,armed){
   c.beginPath(); c.moveTo(-6*s,-22*s); c.quadraticCurveTo(0,-18*s,6*s,-22*s); c.stroke();
   c.restore();
 }
-function drawTruffle(c,x,y,t,sc,armed){
+function drawTruffle(c,x,y,t,sc,armed,armPct){
   const s=sc||1;
   c.save(); c.translate(x,y+2*s);
   // 地面土堆
@@ -741,6 +741,14 @@ function drawTruffle(c,x,y,t,sc,armed){
   c.strokeStyle='rgba(240,230,210,0.75)'; c.lineWidth=1.2*s;
   c.beginPath(); c.moveTo(-6*s,-6*s); c.quadraticCurveTo(-2*s,-9*s,2*s,-6*s); c.stroke();
   c.beginPath(); c.moveTo(3*s,-3*s); c.quadraticCurveTo(6*s,-6*s,8*s,-2*s); c.stroke();
+  if(!armed&&armPct!=null){
+    // 充能进度环：金色弧线随充能增长
+    const p=clamp(armPct,0,1);
+    c.strokeStyle='rgba(255,220,120,0.55)'; c.lineWidth=2.4*s;
+    c.beginPath(); c.arc(0,-2*s,18*s,-Math.PI/2,-Math.PI/2+TAU*p); c.stroke();
+    c.strokeStyle='rgba(120,90,40,0.35)'; c.lineWidth=1*s;
+    c.beginPath(); c.ellipse(0,-2*s,19*s,14*s,0,0,TAU); c.stroke();
+  }
   if(armed){
     const pulse=0.4+0.25*Math.sin(t*10);
     c.strokeStyle='rgba(255,230,120,'+pulse+')'; c.lineWidth=2*s;
@@ -1195,7 +1203,7 @@ function render(t){
       if(p.key==='glow')  drawGlow(ctx,0,0,p.t,1);
       if(p.key==='reishi')drawReishi(ctx,0,0,p.t,1,hpPct);
       if(p.key==='agaric')drawAgaric(ctx,0,0,p.t,1,p.armed||p.explodeT>0);
-      if(p.key==='truffle')drawTruffle(ctx,0,0,p.t,1,p.armed);
+      if(p.key==='truffle')drawTruffle(ctx,0,0,p.t,1,p.armed,p.armed?1:p.armT/SEEDS[p.key].arm);
       // 受击白闪
       if(p.hitFlash>0){ ctx.globalAlpha=0.5; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(0,-12,26,0,TAU); ctx.fill(); ctx.globalAlpha=1; }
       ctx.restore();
