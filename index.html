@@ -277,6 +277,7 @@ function plantSeed(cell){
   const p={key,row,col,x:cell.x,y:cell.y,hp:sd.hp,state:'idle',t:rand(0,5),
     fireT:0,emitT:2.5,armed:false,armT:0,explodeT:0,hitFlash:0};
   G.plants.push(p);
+  G.selected=null; // 种完自动取消选中，避免连点误种
   S.plant();
   boom(cell.x,cell.y+10,'#c8e6a0',false);
 }
@@ -912,9 +913,9 @@ function drawPlanet(c,x,y,t,z){
   const bob=dying?0:Math.sin(z.t*3.2)*3;
   const bounce=eating?Math.abs(Math.sin(z.t*8))*5:0;
   const tilt=dying?0:Math.sin(z.t*1.3)*0.05;
-  // 阴影
+  // 阴影（贴地，在球体下方，随行居中）
   c.fillStyle='rgba(0,0,0,0.28)';
-  c.beginPath(); c.ellipse(0,8,R*1.15,6,0,0,TAU); c.fill();
+  c.beginPath(); c.ellipse(0,R+8,R*1.05,5,0,0,TAU); c.fill();
   c.translate(0,-bob-bounce);
   c.rotate(tilt);
   const roll=z.t*0.6;
@@ -1179,9 +1180,8 @@ function render(t){
     const zs=[...G.zombies].sort((a,b)=>(b.row===a.row?b.x-a.x:a.row-b.row));
     const sp=G.level&&G.level.theme==='space';
     for(const z of zs){
-      const zy=LAWN_Y+z.row*CELL_H+CELL_H-8;
-      if(sp) drawPlanet(ctx,z.x,zy,z.t,z);
-      else drawZombie(ctx,z.x,zy,z.t,z);
+      if(sp) drawPlanet(ctx,z.x,LAWN_Y+z.row*CELL_H+CELL_H/2,z.t,z);
+      else drawZombie(ctx,z.x,LAWN_Y+z.row*CELL_H+CELL_H-8,z.t,z);
     }
     // 阳光/月光/星光
     for(const s of G.suns){
