@@ -846,59 +846,75 @@ function drawZombie(c,x,y,t,z){
 
 // ---------- 绘制：太阳系星球敌军 ----------
 function planetMeta(type){
-  if(type==='mercury') return {R:13, col:['#cfc4b4','#8a7f6e']};
-  if(type==='venus')   return {R:15, col:['#f5e6a8','#c9a94e']};
-  if(type==='mars')    return {R:15, col:['#e8805a','#9c3d22']};
-  if(type==='jupiter') return {R:24, col:['#e8c49a','#b07844']};
-  if(type==='uranus')  return {R:20, col:['#bfe8e4','#5fa8c4']};
-  if(type==='saturn')  return {R:18, col:['#f0dcae','#c9a15e']};
-  if(type==='sun')     return {R:26, col:['#ffd166','#ff8c2a']};
-  return {R:16, col:['#dfe9ff','#9aa8c8']};
+  if(type==='mercury') return {R:17, col:['#d6cbb8','#8a7f6e']};
+  if(type==='venus')   return {R:20, col:['#f7e8ae','#c9a94e']};
+  if(type==='mars')    return {R:20, col:['#ee8a62','#9c3d22']};
+  if(type==='jupiter') return {R:30, col:['#ecc9a0','#b07844']};
+  if(type==='uranus')  return {R:26, col:['#c8eee8','#5fa8c4']};
+  if(type==='saturn')  return {R:23, col:['#f4e0b4','#c9a15e']};
+  if(type==='sun')     return {R:32, col:['#ffd166','#ff7f1f']};
+  return {R:20, col:['#dfe9ff','#9aa8c8']};
 }
 function drawPlanetTexture(c,type,R,roll){
   c.save();
   if(type==='mercury'){
-    c.fillStyle='rgba(90,80,70,0.5)';
-    for(let i=0;i<6;i++){
-      const a=i*1.1+roll, rr0=(Math.sin(i*2.3)*0.5+0.5)*R*0.6;
-      c.beginPath(); c.arc(Math.cos(a)*rr0,Math.sin(a)*rr0,2.2,0,TAU); c.fill();
+    // 陨石坑（大而明显）
+    c.fillStyle='rgba(100,88,74,0.6)';
+    for(let i=0;i<7;i++){
+      const a=i*1.15+roll, rr0=(Math.sin(i*2.3)*0.5+0.5)*R*0.62;
+      c.beginPath(); c.arc(Math.cos(a)*rr0,Math.sin(a)*rr0,R*0.14,0,TAU); c.fill();
+      c.fillStyle='rgba(230,220,200,0.45)';
+      c.beginPath(); c.arc(Math.cos(a)*rr0-1,Math.sin(a)*rr0-1,R*0.07,0,TAU); c.fill();
+      c.fillStyle='rgba(100,88,74,0.6)';
     }
   }else if(type==='venus'){
-    c.strokeStyle='rgba(190,150,60,0.6)'; c.lineWidth=2;
+    // 金色漩涡云带
+    c.strokeStyle='rgba(200,158,60,0.75)'; c.lineWidth=Math.max(3,R*0.13);
     for(let i=0;i<3;i++){
-      const y=-R+i*R*0.6+(Math.sin(roll+i)*4);
-      c.beginPath(); c.moveTo(-R,y); c.quadraticCurveTo(0,y+6*Math.sin(roll+i),R,y); c.stroke();
+      const y=-R*0.7+i*R*0.5+(Math.sin(roll+i)*5);
+      c.beginPath(); c.moveTo(-R,y); c.quadraticCurveTo(0,y+R*0.3*Math.sin(roll+i),R,y); c.stroke();
+    }
+    c.strokeStyle='rgba(255,240,190,0.6)'; c.lineWidth=2;
+    for(let i=0;i<3;i++){
+      const y=-R*0.7+i*R*0.5+(Math.cos(roll+i)*4);
+      c.beginPath(); c.moveTo(-R,y); c.quadraticCurveTo(0,y-R*0.25*Math.cos(roll+i),R,y); c.stroke();
     }
   }else if(type==='mars'){
-    c.fillStyle='rgba(120,40,20,0.55)';
-    c.beginPath(); c.ellipse(-4+roll*2,3,4,3,0,0,TAU); c.fill();
-    c.beginPath(); c.ellipse(6-roll*2,-5,3,2.4,0,0,TAU); c.fill();
-    c.fillStyle='rgba(255,240,230,0.8)';
-    c.beginPath(); c.ellipse(-5,-9,6,2.5,-0.2,0,TAU); c.fill();
+    // 暗色斑块 + 白色极冠
+    c.fillStyle='rgba(120,40,20,0.65)';
+    c.beginPath(); c.ellipse(-R*0.25+roll*2,R*0.16,R*0.26,R*0.2,0,0,TAU); c.fill();
+    c.beginPath(); c.ellipse(R*0.3-roll*2,-R*0.25,R*0.2,R*0.16,0,0,TAU); c.fill();
+    c.fillStyle='rgba(255,240,230,0.9)';
+    c.beginPath(); c.ellipse(-R*0.35,-R*0.6,R*0.35,R*0.16,-0.2,0,TAU); c.fill();
   }else if(type==='jupiter'){
-    c.fillStyle='rgba(170,120,70,0.5)';
+    // 横向云带（宽、对比强）+ 大红斑
+    const bands=['rgba(190,140,80,0.55)','rgba(140,90,50,0.45)','rgba(210,170,120,0.6)','rgba(150,100,60,0.5)','rgba(200,155,105,0.55)'];
     for(let i=0;i<5;i++){
-      const y=-R+i*R*0.45;
-      c.fillRect(-R,y,R*2,3.4);
+      const y=-R*0.85+i*R*0.42;
+      c.fillStyle=bands[i];
+      c.fillRect(-R,y,R*2,Math.max(4,R*0.16));
     }
-    c.fillStyle='rgba(200,80,50,0.85)';
-    c.beginPath(); c.ellipse(roll%R-2,3,7,4.5,-0.3,0,TAU); c.fill();
+    c.fillStyle='rgba(215,80,50,0.9)';
+    c.beginPath(); c.ellipse(roll%R-R*0.2,R*0.12,R*0.3,R*0.2,-0.3,0,TAU); c.fill();
   }else if(type==='uranus'){
-    c.fillStyle='rgba(90,170,200,0.5)';
-    for(let i=0;i<3;i++){
-      const x=-R+i*R*0.6;
-      c.fillRect(x,-R,3,R*2);
+    // 淡蓝竖带
+    c.fillStyle='rgba(70,160,200,0.6)';
+    for(let i=0;i<4;i++){
+      const x=-R+i*R*0.55;
+      c.fillRect(x,-R,Math.max(4,R*0.16),R*2);
     }
   }else if(type==='saturn'){
-    c.fillStyle='rgba(200,160,90,0.45)';
-    for(let i=0;i<3;i++){
-      const y=-R+i*R*0.5;
-      c.fillRect(-R,y,R*2,3);
+    // 淡金横带
+    c.fillStyle='rgba(200,160,90,0.5)';
+    for(let i=0;i<4;i++){
+      const y=-R*0.8+i*R*0.5;
+      c.fillRect(-R,y,R*2,Math.max(3.5,R*0.14));
     }
   }else if(type==='sun'){
-    c.fillStyle='rgba(220,120,30,0.55)';
-    c.beginPath(); c.arc(-5+roll*3,2,4,0,TAU); c.fill();
-    c.beginPath(); c.arc(6-roll*2,-6,3,0,TAU); c.fill();
+    // 黑子
+    c.fillStyle='rgba(210,90,20,0.6)';
+    c.beginPath(); c.arc(-R*0.2+roll*3,R*0.08,R*0.18,0,TAU); c.fill();
+    c.beginPath(); c.arc(R*0.22-roll*2,-R*0.22,R*0.13,0,TAU); c.fill();
   }
   c.restore();
 }
@@ -922,9 +938,18 @@ function drawPlanet(c,x,y,t,z){
   // 太阳光晕
   if(z.type==='sun'){
     const pulse=0.3+0.15*Math.sin(z.t*6);
-    const sg=c.createRadialGradient(0,0,R*0.6,0,0,R*2.1);
+    const sg=c.createRadialGradient(0,0,R*0.6,0,0,R*2.3);
     sg.addColorStop(0,'rgba(255,200,90,'+(0.5+pulse)+')'); sg.addColorStop(1,'rgba(255,200,90,0)');
-    c.fillStyle=sg; c.fillRect(-R*2.2,-R*2.2,R*4.4,R*4.4);
+    c.fillStyle=sg; c.fillRect(-R*2.4,-R*2.4,R*4.8,R*4.8);
+  }
+  // 土星环（画在球后面，球体遮挡背面，更立体；双环+卡西尼环缝）
+  if(z.type==='saturn'){
+    c.strokeStyle='rgba(238,205,150,0.95)'; c.lineWidth=6;
+    c.beginPath(); c.ellipse(0,0,R*2.0,R*0.58,-0.32,0,TAU); c.stroke();
+    c.strokeStyle='rgba(255,246,214,0.9)'; c.lineWidth=3.2;
+    c.beginPath(); c.ellipse(0,0,R*1.62,R*0.47,-0.32,0,TAU); c.stroke();
+    c.strokeStyle='rgba(120,80,40,0.55)'; c.lineWidth=1.4;
+    c.beginPath(); c.ellipse(0,0,R*1.82,R*0.53,-0.32,0,TAU); c.stroke();
   }
   // 星体
   const g=c.createRadialGradient(-R*0.3,-R*0.4,R*0.15,0,0,R*1.05);
@@ -936,12 +961,18 @@ function drawPlanet(c,x,y,t,z){
   c.save(); c.beginPath(); c.arc(0,0,R*scale,0,TAU); c.clip();
   drawPlanetTexture(c,z.type,R*scale,roll);
   c.restore();
-  // 土星环
-  if(z.type==='saturn'){
-    c.strokeStyle='rgba(232,196,140,0.95)'; c.lineWidth=4.5;
-    c.beginPath(); c.ellipse(0,0,R*1.55,R*0.45,-0.35,0,TAU); c.stroke();
-    c.strokeStyle='rgba(255,240,200,0.7)'; c.lineWidth=2;
-    c.beginPath(); c.ellipse(0,0,R*1.55,R*0.45,-0.35,0,TAU); c.stroke();
+  // 太阳光芒射线（旋转闪烁）
+  if(z.type==='sun'){
+    c.save(); c.rotate(z.t*0.4);
+    c.strokeStyle='rgba(255,210,110,0.8)'; c.lineWidth=4;
+    for(let i=0;i<12;i++){
+      const a=i*TAU/12;
+      c.beginPath();
+      c.moveTo(Math.cos(a)*(R+4),Math.sin(a)*(R+4));
+      c.lineTo(Math.cos(a)*(R+10),Math.sin(a)*(R+10));
+      c.stroke();
+    }
+    c.restore();
   }
   // 脸（保持正向，可爱/坚定）
   c.save(); c.rotate(-tilt);
