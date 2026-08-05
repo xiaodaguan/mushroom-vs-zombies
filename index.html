@@ -316,7 +316,7 @@ function updateProjectiles(dt){
     let dead=false;
     for(const z of G.zombies){
       if(z.row===s.row&&!z.dying&&s.x>=z.x-24&&s.x<=z.x+30){
-        z.hp-=20; z.hitT=0.12; z.x+=1.5; // 轻微击退（小位移顿挫，避免连续击退过强）
+        z.hp-=20; z.hitT=0.12; z.knock=5; // 强力击退（儿童友好玩法：堆射手可把僵尸一直推回去，永远能赢）
         S.hit();
         G.particles.push({x:s.x,y:s.y-8,vx:-20,vy:-10,life:0.25,max:0.25,size:3,color:'#8fd06a'});
         if(z.hp<=0) killZombie(z,0);
@@ -350,6 +350,7 @@ function updateZombies(dt){
   for(const z of G.zombies){
     z.t+=dt;
     if(z.hitT>0) z.hitT-=dt;
+    if(z.knock>0){ z.x+=z.knock; z.knock*=0.85; }
     if(z.dying){
       z.deathT+=dt;
       if(z.deathT>1.15) z.dead=true;
