@@ -237,7 +237,9 @@ function spawnFallingSun(){
   G.suns.push({x,y:-30,targetY,vy:rand(60,85),state:'fall',v,ttl:9,t:rand(0,10)});
 }
 function spawnMushroomSun(plant){
-  G.suns.push({x:plant.x,y:plant.y-40,targetY:plant.y-rand(60,90),vy:-60,vx:rand(-8,8),state:'rise',v:25,ttl:9,t:rand(0,10)});
+  // 峰值高度钳制在草坪内，避免飘到顶部蘑菇栏后面被遮挡
+  const peak=Math.max(plant.y-rand(60,90), LAWN_Y+15);
+  G.suns.push({x:plant.x,y:plant.y-40,targetY:peak,vy:-60,vx:rand(-8,8),state:'rise',v:25,ttl:9,t:rand(0,10)});
 }
 function collectSun(s){
   G.sun+=s.v; G.sunEarned+=s.v;
