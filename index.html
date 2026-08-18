@@ -1588,8 +1588,11 @@ const EAT={
   winT:0, loseT:0,
   winSoon:0,      // 晋级黑洞后的超长通关动画倒计时（>0 时禁止操作）
 };
-// 宇宙世界尺寸（约 10×8 屏）
-const EAT_WORLD_W=6400, EAT_WORLD_H=4800;
+// 无边界宇宙：天体/星星/星云围绕玩家流式生成、远处回收，飞到哪宇宙铺到哪
+// 活动半径（保持数量的圆盘）与回收半径（超出即删除，防止无限增长）
+const EAT_ACTIVE_R=2400, EAT_RECYCLE_R=3600;
+// 星星/星云维持数量与覆盖半径
+const EAT_STAR_N=5600, EAT_STAR_R=3400, EAT_NEB_N=30, EAT_NEB_R=5200;
 
 // 天体配色（高光/暗面渐变）
 function eatBodyCol(kind){
@@ -1624,24 +1627,26 @@ function eatReset(){
   EAT.rings.length=0; EAT.flash=0;
   G.particles.length=0; G.floats.length=0;
   EAT.stars=[]; EAT.nebulae=[];
-  // 背景星/星云铺满整个宇宙（世界坐标），渲染时按视口裁剪
-  for(let i=0;i<5200;i++){
-    EAT.stars.push({x:rand(0,EAT_WORLD_W),y:rand(0,EAT_WORLD_H),r:rand(0.4,1.7),tw:rand(0,TAU),sp:rand(6,18)});
+  // 背景星/星云围绕出生点（世界原点）流式分布，渲染时按视口裁剪
+  for(let i=0;i<EAT_STAR_N;i++){
+    const a=rand(0,TAU), d=Math.sqrt(Math.random())*EAT_STAR_R;
+    EAT.stars.push({x:Math.cos(a)*d,y:Math.sin(a)*d,r:rand(0.4,1.7),tw:rand(0,TAU),sp:rand(6,18)});
   }
-  for(let i=0;i<26;i++){
-    EAT.nebulae.push({x:rand(0,EAT_WORLD_W),y:rand(0,EAT_WORLD_H),r:rand(120,260),
+  for(let i=0;i<EAT_NEB_N;i++){
+    const a=rand(0,TAU), d=Math.sqrt(Math.random())*EAT_NEB_R;
+    EAT.nebulae.push({x:Math.cos(a)*d,y:Math.sin(a)*d,r:rand(120,260),
       c:['rgba(150,80,220,0.16)','rgba(60,180,220,0.13)','rgba(255,120,80,0.12)'][i%3]});
   }
-  // 玩家从月球起步（可吞小行星涨分晋级），出生在宇宙中央偏左
-  EAT.player={idx:1,kind:'moon',x:EAT_WORLD_W*0.5,y:EAT_WORLD_H*0.62,vx:0,vy:0,
+  // 玩家从月球起步（可吞小行星涨分晋级），出生在世界原点
+  EAT.player={idx:1,kind:'moon',x:0,y:0,vx:0,vy:0,
     hp:3,maxHp:5,score:0,nextScore:eatThreshold(1),scale:1,scaleV:0};
   // 相机先对齐玩家（避免开局黑屏/瞬移）
-  EAT.cam.x=clamp(EAT.player.x-W/2,0,EAT_WORLD_W-W);
-  EAT.cam.y=clamp(EAT.player.y-H/2,0,EAT_WORLD_H-H);
-  // 初始场景：大量低等级天体铺满宇宙，少量威胁
-  spawnEatFood(90);
-  spawnEatThreat(16);
-  spawnEatCore(5);
+  EAT.cam.x=EAT.player.x-W/2;
+  EAT.cam.y=EAT.player.y-H/2;
+  // 初始场景：玩家周围铺满低等级天体与少量威胁
+  spawnEatFood(90, EAT_ACTIVE_R);
+  spawnEatThreat(16, EAT_ACTIVE_R);
+  spawnEatCore(5, EAT_ACTIVE_R);
 }
 function eatSpawnEntity(kind, x, y){
   return {kind, x, y, vx:rand(-18,18), vy:rand(-18,18), t:rand(0,10), r:eatBodyRadius(kind), eaten:false};
@@ -1655,7 +1660,8 @@ function eatBodyLevel(kind){
 }
 function eatSpawnHeal(x,y){ return {kind:'core',x,y,vx:rand(-14,14),vy:rand(-14,14),t:rand(0,10),r:9,eaten:false}; }
 
-function spawnEatFood(n, near){
+function spawnEatFood(n, radius){
+  radius=radius||EAT_ACTIVE_R;
   for(let i=0;i<n;i++){
     // 只生成比玩家低 1~3 级的天体（保证总有的吃），且不高于玩家 0 级
     const plv=EAT.player.idx;
@@ -1663,39 +1669,34 @@ function spawnEatFood(n, near){
     const lv=Math.max(0, plv-offset);
     // 首关固定放大量小行星/月球
     const kind=EAT_CHAIN[lv].kind;
-    let x,y;
-    if(near){
-      // 玩家附近随机生成（半径 260~700），保证视野内总有食物
-      const a=rand(0,TAU), d=rand(260,700);
-      x=clamp(EAT.player.x+Math.cos(a)*d,40,EAT_WORLD_W-40);
-      y=clamp(EAT.player.y+Math.sin(a)*d,60,EAT_WORLD_H-40);
-    } else {
-      x=rand(40,EAT_WORLD_W-40); y=rand(60,EAT_WORLD_H-40);
-    }
+    // 玩家周围 radius 内均匀分布（无边界宇宙，始终围绕玩家铺）
+    const a=rand(0,TAU), d=Math.sqrt(Math.random())*radius;
+    let x=EAT.player.x+Math.cos(a)*d, y=EAT.player.y+Math.sin(a)*d;
     // 避免直接压在玩家身上
-    if(Math.hypot(x-EAT.player.x,y-EAT.player.y)<80){ x=rand(40,EAT_WORLD_W-40); y=rand(60,EAT_WORLD_H-40); }
+    if(Math.hypot(x-EAT.player.x,y-EAT.player.y)<80){
+      const a2=rand(0,TAU), d2=rand(150,400);
+      x=EAT.player.x+Math.cos(a2)*d2; y=EAT.player.y+Math.sin(a2)*d2;
+    }
     EAT.foods.push(eatSpawnEntity(kind,x,y));
   }
 }
-function spawnEatThreat(n, near){
+function spawnEatThreat(n, radius){
+  radius=radius||EAT_ACTIVE_R;
   for(let i=0;i<n;i++){
     const plv=EAT.player.idx;
     const lv=Math.min(EAT_CHAIN.length-1, plv+irand(1,2));
     const kind=EAT_CHAIN[lv].kind;
-    let x,y;
-    if(near){
-      const a=rand(0,TAU), d=rand(420,1000);
-      x=clamp(EAT.player.x+Math.cos(a)*d,60,EAT_WORLD_W-60);
-      y=clamp(EAT.player.y+Math.sin(a)*d,80,EAT_WORLD_H-60);
-    } else {
-      x=rand(60,EAT_WORLD_W-60); y=rand(80,EAT_WORLD_H-60);
-    }
+    // 威胁比食物更靠外圈，避免开局贴身
+    const a=rand(0,TAU), d=Math.sqrt(Math.random())*radius*0.8+radius*0.2;
+    const x=EAT.player.x+Math.cos(a)*d, y=EAT.player.y+Math.sin(a)*d;
     EAT.threats.push(eatSpawnEntity(kind,x,y));
   }
 }
-function spawnEatCore(n){
+function spawnEatCore(n, radius){
+  radius=radius||EAT_ACTIVE_R;
   for(let i=0;i<n;i++){
-    let x=rand(60,EAT_WORLD_W-60), y=rand(80,EAT_WORLD_H-60);
+    const a=rand(0,TAU), d=Math.sqrt(Math.random())*radius;
+    const x=EAT.player.x+Math.cos(a)*d, y=EAT.player.y+Math.sin(a)*d;
     EAT.cores.push(eatSpawnHeal(x,y));
   }
 }
@@ -1748,7 +1749,7 @@ function eatDoConsume(kind, ent){
         continue;
       }
       // 补充食物/威胁/星核（玩家附近补，保证晋级后立即有得吃）
-      spawnEatFood(8,true); spawnEatThreat(2,true);
+      spawnEatFood(8, 1400); spawnEatThreat(2, 1400);
     }
     return;
   }
@@ -1847,17 +1848,13 @@ function eatUpdate(dt){
   p.vx+=(tvx-p.vx)*kf;
   p.vy+=(tvy-p.vy)*kf;
   p.x+=p.vx*dt; p.y+=p.vy*dt;
-  // 世界边界回弹
+  // 无边界宇宙：玩家不受世界边界限制，可飞向任意方向
   const pr=eatBodyRadius(p.kind);
-  if(p.x<pr){ p.x=pr; p.vx*=-0.4; }
-  if(p.x>EAT_WORLD_W-pr){ p.x=EAT_WORLD_W-pr; p.vx*=-0.4; }
-  if(p.y<pr){ p.y=pr; p.vy*=-0.4; }
-  if(p.y>EAT_WORLD_H-pr){ p.y=EAT_WORLD_H-pr; p.vy*=-0.4; }
-  // 相机平滑跟随：玩家大致保持在屏幕中央，相机钳制在世界边界内
+  // 相机平滑跟随：玩家大致保持在屏幕中央（无边界，不做钳制）
   const tcx=p.x-W/2, tcy=p.y-H/2;
   const ck=1-Math.exp(-4.0*dt);
-  EAT.cam.x+=((clamp(tcx,0,EAT_WORLD_W-W))-EAT.cam.x)*ck;
-  EAT.cam.y+=((clamp(tcy,0,EAT_WORLD_H-H))-EAT.cam.y)*ck;
+  EAT.cam.x+=(tcx-EAT.cam.x)*ck;
+  EAT.cam.y+=(tcy-EAT.cam.y)*ck;
   // 缩放回弹
   if(p.scaleV>0){ p.scaleV=Math.max(0,p.scaleV-dt*2); }
   p.scale=1+p.scaleV*0.5;
@@ -1867,30 +1864,29 @@ function eatUpdate(dt){
     for(const f of EAT.foods){ f.x+=f.vx*dt; f.y+=f.vy*dt; f.t+=dt; } // 食物轻微漂移即可
     return;
   }
-  // 食物/威胁/星核移动 + 简单 AI（高级天体略微追击）
+  // 食物/威胁/星核移动 + 简单 AI（高级天体仅在玩家附近追击）
   for(const f of EAT.foods){
     f.x+=f.vx*dt; f.y+=f.vy*dt; f.t+=dt;
-    if(f.x<30||f.x>EAT_WORLD_W-30) f.vx*=-1;
-    if(f.y<60||f.y>EAT_WORLD_H-30) f.vy*=-1;
     if(Math.hypot(f.x-p.x,f.y-p.y)<pr+f.r){ eatDoConsume(f.kind,f); }
   }
   for(const t2 of EAT.threats){
     const elv=eatBodyLevel(t2.kind);
-    // 高级天体缓慢朝玩家漂移（有压迫感但不追击太狠）
+    // 高级天体：仅在玩家附近 700px 内缓慢朝玩家漂移（有压迫感但不会全图围堵）
     if(elv>p.idx){
       const dx=p.x-t2.x, dy=p.y-t2.y, d=Math.hypot(dx,dy)||1;
-      t2.vx+=(dx/d*14-t2.vx)*Math.min(1,dt*0.8);
-      t2.vy+=(dy/d*14-t2.vy)*Math.min(1,dt*0.8);
+      if(d<700){
+        t2.vx+=(dx/d*16-t2.vx)*Math.min(1,dt*0.8);
+        t2.vy+=(dy/d*16-t2.vy)*Math.min(1,dt*0.8);
+      } else {
+        // 远处随机游走
+        t2.vx+=(-t2.vx*0.3)*dt; t2.vy+=(-t2.vy*0.3)*dt;
+      }
     }
     t2.x+=t2.vx*dt; t2.y+=t2.vy*dt; t2.t+=dt;
-    if(t2.x<40||t2.x>EAT_WORLD_W-40) t2.vx*=-1;
-    if(t2.y<70||t2.y>EAT_WORLD_H-40) t2.vy*=-1;
     if(Math.hypot(t2.x-p.x,t2.y-p.y)<pr+t2.r){ eatDoConsume(t2.kind,t2); }
   }
   for(const c of EAT.cores){
     c.x+=c.vx*dt; c.y+=c.vy*dt; c.t+=dt;
-    if(c.x<30||c.x>EAT_WORLD_W-30) c.vx*=-1;
-    if(c.y<60||c.y>EAT_WORLD_H-30) c.vy*=-1;
     if(Math.hypot(c.x-p.x,c.y-p.y)<pr+c.r){ eatDoConsume('core',c); }
   }
   // 清理已吃
@@ -1902,12 +1898,54 @@ function eatUpdate(dt){
     const fx=EAT_FX[i]; fx.ttl-=dt;
     if(fx.ttl<=0) EAT_FX.splice(i,1);
   }
-  // 动态补充：在玩家附近生成，保证视野内总有食物可吃
-  if(EAT.foods.length<50) spawnEatFood(8,true);
-  if(EAT.threats.length<9) spawnEatThreat(3,true);
-  if(EAT.cores.length<4 && Math.random()<0.02) spawnEatCore(1);
+  // 流式世界：以玩家为圆心的活动盘内维持天体数量，超出回收半径的删除
+  eatStreamWorld();
   // 背景色调渐变（太阳系暖色 → 恒星深空冷色）
   if(EAT.tune>0 && EAT.tune<1) EAT.tune=Math.min(1,EAT.tune+dt*0.35);
+}
+
+// 无边界流式世界：以玩家为圆心的活动盘内维持天体数量，远处自动回收，星星/星云跟着玩家铺
+function eatStreamWorld(){
+  const p=EAT.player;
+  // 活动盘内计数
+  let nF=0, nT=0, nC=0;
+  for(const f of EAT.foods){ if(Math.hypot(f.x-p.x,f.y-p.y)<EAT_ACTIVE_R) nF++; }
+  for(const t2 of EAT.threats){ if(Math.hypot(t2.x-p.x,t2.y-p.y)<EAT_ACTIVE_R) nT++; }
+  for(const c of EAT.cores){ if(Math.hypot(c.x-p.x,c.y-p.y)<EAT_ACTIVE_R) nC++; }
+  // 维持目标数量（玩家附近持续补充，保证视野内总有食物）
+  if(nF<55) spawnEatFood(10, EAT_ACTIVE_R);
+  if(nT<11) spawnEatThreat(3, EAT_ACTIVE_R);
+  if(nC<4 && Math.random()<0.02) spawnEatCore(1, EAT_ACTIVE_R);
+  // 回收超出回收半径的实体（防止无限增长）
+  if(EAT.foods.length>220) EAT.foods=EAT.foods.filter(f=>Math.hypot(f.x-p.x,f.y-p.y)<EAT_RECYCLE_R);
+  if(EAT.threats.length>60) EAT.threats=EAT.threats.filter(t2=>Math.hypot(t2.x-p.x,t2.y-p.y)<EAT_RECYCLE_R);
+  if(EAT.cores.length>20) EAT.cores=EAT.cores.filter(c=>Math.hypot(c.x-p.x,c.y-p.y)<EAT_RECYCLE_R);
+  // 远方太阳地标：玩家晋级到太阳之前，天际始终有一个「太阳」可循（视口边缘提示会标出方向）
+  if(EAT.player.idx<9){
+    let hasSun=false;
+    for(const t2 of EAT.threats){ if(t2.kind==='sun'){ hasSun=true; break; } }
+    if(!hasSun){
+      // 在玩家 2500-3500px 方向生成（既超出活动盘 2400 让边缘提示可见，又在回收半径 3600 内避免永被回收）
+      const a=rand(0,TAU), d=rand(2500,3500);
+      const x=EAT.player.x+Math.cos(a)*d, y=EAT.player.y+Math.sin(a)*d;
+      EAT.threats.push(eatSpawnEntity('sun',x,y));
+    }
+  }
+  // 星星流式：环形带内保持数量，玩家移动后远处删除、新处补充
+  if(EAT.stars.length>EAT_STAR_N*1.6) EAT.stars=EAT.stars.filter(s=>Math.hypot(s.x-p.x,s.y-p.y)<EAT_STAR_R);
+  const needS=EAT_STAR_N-EAT.stars.length;
+  for(let i=0;i<needS;i++){
+    const a=rand(0,TAU), d=Math.sqrt(Math.random())*EAT_STAR_R;
+    EAT.stars.push({x:p.x+Math.cos(a)*d,y:p.y+Math.sin(a)*d,r:rand(0.4,1.7),tw:rand(0,TAU),sp:rand(6,18)});
+  }
+  // 星云流式
+  if(EAT.nebulae.length>EAT_NEB_N*1.6) EAT.nebulae=EAT.nebulae.filter(n=>Math.hypot(n.x-p.x,n.y-p.y)<EAT_NEB_R);
+  const needN=EAT_NEB_N-EAT.nebulae.length;
+  for(let i=0;i<needN;i++){
+    const a=rand(0,TAU), d=Math.sqrt(Math.random())*EAT_NEB_R;
+    EAT.nebulae.push({x:p.x+Math.cos(a)*d,y:p.y+Math.sin(a)*d,r:rand(120,260),
+      c:['rgba(150,80,220,0.16)','rgba(60,180,220,0.13)','rgba(255,120,80,0.12)'][i%3]});
+  }
 }
 
 // 2D 精美天体绘制（复用星空关纹理绘制思路，独立实现避免破坏）
@@ -2221,6 +2259,9 @@ function eatDrawHUD(t){
     ctx.textAlign='center'; ctx.fillStyle='rgba(255,233,168,0.95)'; ctx.font='bold 13px "Microsoft YaHei",sans-serif';
     ctx.fillText('⭐⭐ 已到最大级别！',620,30);
   }
+  // 宇宙坐标（无边界宇宙定位用）
+  ctx.textAlign='right'; ctx.font='12px "Microsoft YaHei",sans-serif'; ctx.fillStyle='rgba(255,255,255,0.8)';
+  ctx.fillText('🌌 坐标 '+Math.round(p.x)+', '+Math.round(p.y), W-14, 50);
   // 引导提示（intro 阶段）
   if(EAT.state==='intro'){
     ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -2274,6 +2315,66 @@ function eatDrawHUD(t){
     ctx.fillStyle='#ffe066'; ctx.fillText('🌌 离开太阳系！外面还有更大的天体',W/2,400);
     ctx.globalAlpha=1;
   }
+}
+
+// 视口边缘方位提示：视口外的高级天体/星核用箭头标出方向（颜色=天体色，近的亮，里程碑天体带名字）
+function drawEatEdgeMarkers(){
+  const p=EAT.player;
+  const cam=EAT.cam;
+  const items=[];
+  const mT=64, mB=20, mL=18, mR=18; // 边缘边距（顶部避开 HUD）
+  for(const t of EAT.threats){
+    const sx=t.x-cam.x, sy=t.y-cam.y;
+    if(sx>mL-24&&sx<W-mR+24&&sy>mT-24&&sy<H-mB+24) continue; // 视口内，玩家已可见
+    const elv=eatBodyLevel(t.kind);
+    const ch=EAT_CHAIN[elv];
+    const milestone=!!(ch&&(ch.boss||ch.winLevel||t.kind==='redgiant'||t.kind==='whitedwarf'||t.kind==='neutron'));
+    items.push({sx,sy,kind:t.kind,name:ch?ch.name:t.kind,dist:Math.hypot(t.x-p.x,t.y-p.y),milestone,core:false});
+  }
+  for(const c of EAT.cores){
+    const sx=c.x-cam.x, sy=c.y-cam.y;
+    if(sx>mL-24&&sx<W-mR+24&&sy>mT-24&&sy<H-mB+24) continue;
+    items.push({sx,sy,kind:'core',name:'星核',dist:Math.hypot(c.x-p.x,c.y-p.y),milestone:false,core:true});
+  }
+  if(items.length===0) return;
+  // 排序：里程碑天体/星核优先，再按距离（保证太阳等远景总能显示）
+  items.sort((a,b)=>{
+    const ap=(a.milestone||a.core)?1:0;
+    const bp=(b.milestone||b.core)?1:0;
+    if(ap!==bp) return bp-ap;
+    return a.dist-b.dist;
+  });
+  const shown=items.slice(0,12);
+  for(const it of shown){
+    const col=eatBodyCol(it.kind)[0];
+    const px=clamp(it.sx,mL,W-mR), py=clamp(it.sy,mT,H-mB);
+    const ang=Math.atan2(it.sy-py, it.sx-px);
+    const near=it.dist<700;
+    const alpha=near?1:clamp(0.35+0.6*(1-it.dist/2400),0.35,0.95);
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    // 深色圆底
+    ctx.fillStyle='rgba(8,12,26,0.6)';
+    ctx.beginPath(); ctx.arc(px,py,it.milestone?13:10,0,TAU); ctx.fill();
+    // 天体色小圆
+    ctx.fillStyle=col;
+    ctx.beginPath(); ctx.arc(px,py,it.core?4:5.5,0,TAU); ctx.fill();
+    // 指向目标的箭头
+    ctx.save(); ctx.translate(px,py); ctx.rotate(ang);
+    ctx.fillStyle=col;
+    ctx.beginPath(); ctx.moveTo(it.milestone?17:13,0); ctx.lineTo(-5,-6); ctx.lineTo(-5,6); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    // 名字（里程碑/星核加粗，普通威胁小字）
+    ctx.font=(it.milestone||it.core)?'bold 12px "Microsoft YaHei",sans-serif':'10px "Microsoft YaHei",sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    const lx=clamp(it.sx+((it.sx<px)?-30:30),44,W-44);
+    const ly=clamp(py+(py<mT+30?-22:18),mT+12,H-mB-8);
+    ctx.strokeStyle='rgba(0,0,0,0.8)'; ctx.lineWidth=3;
+    ctx.strokeText(it.name,lx,ly);
+    ctx.fillStyle='#fff'; ctx.fillText(it.name,lx,ly);
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
 }
 
 function eatDrawWorld(t){
@@ -2388,6 +2489,8 @@ function eatRender(t){
   ctx.restore();
   // HUD 为屏幕坐标（相机恢复后绘制）
   eatDrawHUD(t);
+  // 视口边缘方位提示（高级天体/星核在哪个方向）
+  if(EAT.state==='play'||EAT.state==='intro') drawEatEdgeMarkers();
   // 晋级全屏金色柔光（屏幕坐标，覆盖 HUD 之上的光效）
   if(EAT.flash>0){
     ctx.globalAlpha=clamp(EAT.flash*0.5,0,1);
