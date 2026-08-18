@@ -221,8 +221,8 @@ function boom(x,y,color,big){
   }
   if(big) G.shake=12;
 }
-function floatText(x,y,str,color){
-  G.floats.push({x,y,str,color:color||'#ffe066',life:1});
+function floatText(x,y,str,color,size){
+  G.floats.push({x,y,str,color:color||'#ffe066',life:1,size:size||18});
 }
 function addSunCollectFx(x,y){
   for(let i=0;i<6;i++){
@@ -1398,6 +1398,7 @@ function render(t){
   if(G.state==='title') drawTitle(t);
   else if(G.state==='select') drawSelect(t);
   else if(G.state==='explore') exRender(t);
+  else if(G.state==='eat') eatRender(t);
   else if(G.state==='intro') drawIntro(t);
   else if(G.state==='win') drawEnd(t,true);
   else if(G.state==='lose') drawEnd(t,false);
@@ -1450,32 +1451,33 @@ function drawSelect(t){
   ctx.strokeStyle='rgba(0,0,0,0.8)'; ctx.lineWidth=7;
   ctx.strokeText('选择关卡',W/2,108);
   ctx.fillStyle='#fff'; ctx.fillText('选择关卡',W/2,108);
-  // 四张关卡卡片（横排缩小）
+  // 五张关卡卡片（横排缩小）
   const cards=[
-    {title:'第 1 关',sub:'白天草地',desc:'新手关·10波',theme:'day',emoji:'🌞',l1:'普通/路障/铁桶/旗帜',l2:'蘑菇：马勃/荧光/灵芝/毒蝇伞/松露'},
-    {title:'第 2 关',sub:'月光之夜',desc:'进阶关·12波',theme:'night',emoji:'🌙',l1:'普通/路障/铁桶/旗帜',l2:'月光会从荧光菇渗出'},
-    {title:'第 3 关',sub:'星空战场',desc:'星球入侵·12波',theme:'space',emoji:'🪐',l1:'水金火木土+天王星',l2:'守护地球，抵御星球大军'},
-    {title:'第 4 关',sub:'探索太阳系',desc:'自由探索·无战斗',theme:'explore',emoji:'🚀',l1:'9 大行星+月球 科普漫游',l2:'驾驶飞船，点亮整片星空'},
+    {title:'第 1 关',sub:'白天草地',desc:'新手关·10波',theme:'day',emoji:'🌞',l1:'普通/路障/铁桶',l2:'蘑菇：马勃/荧光'},
+    {title:'第 2 关',sub:'月光之夜',desc:'进阶关·12波',theme:'night',emoji:'🌙',l1:'普通/路障/铁桶',l2:'月光从荧光菇渗出'},
+    {title:'第 3 关',sub:'星空战场',desc:'星球入侵·12波',theme:'space',emoji:'🪐',l1:'水金火木土+天王星',l2:'守护地球抵御星球'},
+    {title:'第 4 关',sub:'探索太阳系',desc:'自由探索·无战斗',theme:'explore',emoji:'🚀',l1:'9 大行星+月球',l2:'驾驶飞船点亮星空'},
+    {title:'第 5 关',sub:'天体吞噬',desc:'吃掉它们·长成巨兽',theme:'eat',emoji:'🕳️',l1:'小行星→黑洞',l2:'吞掉黑洞成为宇宙之王'},
   ];
-  const cw=180,ch=300,gap=16,x0=16,y=200;
+  const cw=148,ch=300,gap=9,x0=13,y=200;
   for(let i=0;i<cards.length;i++){
     const cd=cards[i];
     const x=x0+i*(cw+gap);
     const hover=G.mouse.x>x&&G.mouse.x<x+cw&&G.mouse.y>y&&G.mouse.y<y+ch;
-    ctx.fillStyle=cd.theme==='day'?'#8fd0f5':(cd.theme==='night'?'#1d2b4d':(cd.theme==='space'?'#2a1a4a':'#141a38'));
+    ctx.fillStyle=cd.theme==='day'?'#8fd0f5':(cd.theme==='night'?'#1d2b4d':(cd.theme==='space'?'#2a1a4a':(cd.theme==='eat'?'#1f1233':'#141a38')));
     rr(ctx,x,y,cw,ch,16); ctx.fill();
     ctx.strokeStyle=hover?'#ffd93d':'rgba(255,255,255,0.35)'; ctx.lineWidth=hover?4:2;
     rr(ctx,x,y,cw,ch,16); ctx.stroke();
     ctx.fillStyle='#fff';
-    ctx.font='bold 22px "Microsoft YaHei",sans-serif';
+    ctx.font='bold 20px "Microsoft YaHei",sans-serif';
     ctx.fillText(cd.emoji+' '+cd.title,x+cw/2,y+44);
-    ctx.font='bold 18px "Microsoft YaHei",sans-serif';
+    ctx.font='bold 17px "Microsoft YaHei",sans-serif';
     ctx.fillText(cd.sub,x+cw/2,y+84);
-    ctx.font='12.5px "Microsoft YaHei",sans-serif';
-    ctx.fillStyle=cd.theme==='day'?'#1a3a1a':(cd.theme==='night'?'#cfe8ff':(cd.theme==='space'?'#e8d8ff':'#9fd8ff'));
+    ctx.font='12px "Microsoft YaHei",sans-serif';
+    ctx.fillStyle=cd.theme==='day'?'#1a3a1a':(cd.theme==='night'?'#cfe8ff':(cd.theme==='space'?'#e8d8ff':(cd.theme==='eat'?'#c9a8ff':'#9fd8ff')));
     ctx.fillText(cd.desc,x+cw/2,y+118);
-    ctx.font='11px "Microsoft YaHei",sans-serif';
-    ctx.fillStyle=cd.theme==='day'?'#3a5a3a':(cd.theme==='night'?'#9ab8d8':(cd.theme==='space'?'#b8a8e0':'#8890b8'));
+    ctx.font='10.5px "Microsoft YaHei",sans-serif';
+    ctx.fillStyle=cd.theme==='day'?'#3a5a3a':(cd.theme==='night'?'#9ab8d8':(cd.theme==='space'?'#b8a8e0':(cd.theme==='eat'?'#b09ad0':'#8890b8')));
     ctx.fillText(cd.l1,x+cw/2,y+148);
     ctx.fillText(cd.l2,x+cw/2,y+168);
     if(hover){
@@ -1534,6 +1536,1004 @@ function drawPause(){
   ctx.fillStyle='#cfe8ff'; ctx.fillText('按 空格 或 点击 继续',W/2,H/2+50);
 }
 
+
+// ============================================================
+// 第 5 关 · 天体吞噬（起点太阳系，一路吃到宇宙尽头）
+// 2D 自由飞行吞噬玩法：拖拽牵引自己的天体，吞掉更低级天体涨分晋级，
+// 撞到更高级天体掉血，吞掉最终 Boss（超大质量黑洞）通关。
+// ============================================================
+
+// 天体等级链（由低到高）：太阳系内 → 恒星 → 终局黑洞
+const EAT_CHAIN=[
+  {id:'asteroid', name:'小行星',    kind:'asteroid', r:13},
+  {id:'moon',     name:'月球',      kind:'moon',     r:16},
+  {id:'mercury',  name:'水星',      kind:'mercury',  r:20},
+  {id:'mars',     name:'火星',      kind:'mars',     r:23},
+  {id:'venus',    name:'金星',      kind:'venus',    r:25},
+  {id:'earth',    name:'地球',      kind:'earth',    r:28},
+  {id:'neptune',  name:'海王星',    kind:'neptune',  r:32},
+  {id:'uranus',   name:'天王星',    kind:'uranus',   r:35},
+  {id:'saturn',   name:'土星',      kind:'saturn',   r:38},
+  {id:'jupiter',  name:'木星',      kind:'jupiter',  r:46},
+  {id:'sun',      name:'太阳',      kind:'sun',      r:56, boss:true},
+  {id:'redgiant', name:'红巨星',    kind:'redgiant', r:66},
+  {id:'whitedwarf',name:'白矮星',   kind:'whitedwarf',r:44},
+  {id:'neutron',  name:'中子星',    kind:'neutron',  r:30},
+  {id:'blackhole',name:'黑洞',      kind:'blackhole',r:70, winLevel:true},
+];
+// 每级吃掉的"食物"（比它低一级或多级）都不影响晋级分数阈值，统一按目标等级算分
+function eatThreshold(lv){ return 60 + lv*55; } // 达到该分数即晋级
+// 吃掉等级 k 的天体得到的分数（越高越值钱）
+function eatScore(k){ return 25 + k*12; }
+// 特殊天体「星核」：回血
+const CORE_KINDS={};
+
+// 玩家当前可吞噬的"目标等级"提示用（比玩家低级的都可吞，用紧邻的低一级做目标图标）
+const EAT={
+  state:'intro', // intro | play | win | lose
+  player:null,   // {idx,kind,x,y,vx,vy,hp,maxHp,score,nextScore,inv,scale,scaleV}
+  foods:[],      // 可吞噬的普通天体（等级 < 玩家）
+  threats:[],    // 高级天体（等级 > 玩家，或最终Boss）
+  cores:[],      // 星核（回血）
+  stars:[],      // 背景星（世界坐标）
+  nebulae:[],    // 背景星云（世界坐标）
+  cam:{x:0,y:0}, // 相机（视口左上角对应的世界坐标）
+  rings:[],      // 晋级扩散光环（世界坐标）
+  flash:0,       // 全屏金色柔光（晋级用，屏幕坐标）
+  dragging:null, // {pid, lx, ly} 跟随指针的牵引点（世界坐标）
+  pointer:null,  // 当前按住指针 id
+  t:0, shake:0, slow:0, lastBoss:false,
+  inv:0,          // 吃掉后的短暂无敌
+  tune:0,         // 传背景色调（太阳系暖色 ↔ 深空冷色）
+  winT:0, loseT:0,
+  winSoon:0,      // 晋级黑洞后的超长通关动画倒计时（>0 时禁止操作）
+};
+// 宇宙世界尺寸（约 10×8 屏）
+const EAT_WORLD_W=6400, EAT_WORLD_H=4800;
+
+// 天体配色（高光/暗面渐变）
+function eatBodyCol(kind){
+  const m={
+    asteroid:['#c0b6a4','#6e6658'],
+    moon:['#ececec','#9a9a9a'],
+    mercury:['#e5dccb','#8a7f6e'],
+    mars:['#f0a080','#a04428'],
+    venus:['#fbf0c0','#d0a54e'],
+    earth:['#aee3ff','#1d5fae'],
+    neptune:['#8ec6f2','#1c3fa0'],
+    uranus:['#cfeee8','#5fa8c4'],
+    saturn:['#f6e4b8','#c9a15e'],
+    jupiter:['#f2d3a4','#b07844'],
+    sun:['#fff3b0','#ff7f1f'],
+    redgiant:['#ffb27a','#c0391f'],
+    whitedwarf:['#f4fbff','#9ad0f0'],
+    neutron:['#c8f0ff','#5f9cd0'],
+    blackhole:['#1a0a2a','#000'],
+    core:['#a8ffb8','#1a8a3a'],
+  };
+  return m[kind]||['#fff','#888'];
+}
+// 吞噬吸入动画的中间态列表
+const EAT_FX=[]; // {x,y,r,kind,ttl}
+
+function eatReset(){
+  EAT.state='intro'; EAT.t=0; EAT.shake=0; EAT.slow=0; EAT.lastBoss=false;
+  EAT.inv=0; EAT.tune=0; EAT.winT=0; EAT.loseT=0; EAT.winSoon=0;
+  EAT.dragging=null; EAT.pointer=null;
+  EAT.foods=[]; EAT.threats=[]; EAT.cores=[]; EAT_FX.length=0;
+  EAT.rings.length=0; EAT.flash=0;
+  G.particles.length=0; G.floats.length=0;
+  EAT.stars=[]; EAT.nebulae=[];
+  // 背景星/星云铺满整个宇宙（世界坐标），渲染时按视口裁剪
+  for(let i=0;i<5200;i++){
+    EAT.stars.push({x:rand(0,EAT_WORLD_W),y:rand(0,EAT_WORLD_H),r:rand(0.4,1.7),tw:rand(0,TAU),sp:rand(6,18)});
+  }
+  for(let i=0;i<26;i++){
+    EAT.nebulae.push({x:rand(0,EAT_WORLD_W),y:rand(0,EAT_WORLD_H),r:rand(120,260),
+      c:['rgba(150,80,220,0.16)','rgba(60,180,220,0.13)','rgba(255,120,80,0.12)'][i%3]});
+  }
+  // 玩家从月球起步（可吞小行星涨分晋级），出生在宇宙中央偏左
+  EAT.player={idx:1,kind:'moon',x:EAT_WORLD_W*0.5,y:EAT_WORLD_H*0.62,vx:0,vy:0,
+    hp:3,maxHp:5,score:0,nextScore:eatThreshold(1),scale:1,scaleV:0};
+  // 相机先对齐玩家（避免开局黑屏/瞬移）
+  EAT.cam.x=clamp(EAT.player.x-W/2,0,EAT_WORLD_W-W);
+  EAT.cam.y=clamp(EAT.player.y-H/2,0,EAT_WORLD_H-H);
+  // 初始场景：大量低等级天体铺满宇宙，少量威胁
+  spawnEatFood(90);
+  spawnEatThreat(16);
+  spawnEatCore(5);
+}
+function eatSpawnEntity(kind, x, y){
+  return {kind, x, y, vx:rand(-18,18), vy:rand(-18,18), t:rand(0,10), r:eatBodyRadius(kind), eaten:false};
+}
+function eatBodyRadius(kind){
+  const ch=EAT_CHAIN.find(c=>c.kind===kind)||EAT_CHAIN.find(c=>c.id===kind);
+  return ch?ch.r:20;
+}
+function eatBodyLevel(kind){
+  return EAT_CHAIN.findIndex(c=>c.kind===kind||c.id===kind);
+}
+function eatSpawnHeal(x,y){ return {kind:'core',x,y,vx:rand(-14,14),vy:rand(-14,14),t:rand(0,10),r:9,eaten:false}; }
+
+function spawnEatFood(n, near){
+  for(let i=0;i<n;i++){
+    // 只生成比玩家低 1~3 级的天体（保证总有的吃），且不高于玩家 0 级
+    const plv=EAT.player.idx;
+    const offset=irand(1,3);
+    const lv=Math.max(0, plv-offset);
+    // 首关固定放大量小行星/月球
+    const kind=EAT_CHAIN[lv].kind;
+    let x,y;
+    if(near){
+      // 玩家附近随机生成（半径 260~700），保证视野内总有食物
+      const a=rand(0,TAU), d=rand(260,700);
+      x=clamp(EAT.player.x+Math.cos(a)*d,40,EAT_WORLD_W-40);
+      y=clamp(EAT.player.y+Math.sin(a)*d,60,EAT_WORLD_H-40);
+    } else {
+      x=rand(40,EAT_WORLD_W-40); y=rand(60,EAT_WORLD_H-40);
+    }
+    // 避免直接压在玩家身上
+    if(Math.hypot(x-EAT.player.x,y-EAT.player.y)<80){ x=rand(40,EAT_WORLD_W-40); y=rand(60,EAT_WORLD_H-40); }
+    EAT.foods.push(eatSpawnEntity(kind,x,y));
+  }
+}
+function spawnEatThreat(n, near){
+  for(let i=0;i<n;i++){
+    const plv=EAT.player.idx;
+    const lv=Math.min(EAT_CHAIN.length-1, plv+irand(1,2));
+    const kind=EAT_CHAIN[lv].kind;
+    let x,y;
+    if(near){
+      const a=rand(0,TAU), d=rand(420,1000);
+      x=clamp(EAT.player.x+Math.cos(a)*d,60,EAT_WORLD_W-60);
+      y=clamp(EAT.player.y+Math.sin(a)*d,80,EAT_WORLD_H-60);
+    } else {
+      x=rand(60,EAT_WORLD_W-60); y=rand(80,EAT_WORLD_H-60);
+    }
+    EAT.threats.push(eatSpawnEntity(kind,x,y));
+  }
+}
+function spawnEatCore(n){
+  for(let i=0;i<n;i++){
+    let x=rand(60,EAT_WORLD_W-60), y=rand(80,EAT_WORLD_H-60);
+    EAT.cores.push(eatSpawnHeal(x,y));
+  }
+}
+function eatIntroStart(){
+  EAT.state='intro';
+}
+
+// 吞噬判定：玩家 vs 各列表
+function eatDoConsume(kind, ent){
+  const plv=EAT.player.idx;
+  const elv=eatBodyLevel(kind);
+  if(EAT.state!=='play') return;
+  if(EAT.inv>0) return; // 无敌帧内不做碰撞伤害/吞并（避免连吞连撞）
+  if(kind==='core'){
+    // 回血
+    if(EAT.player.hp<EAT.player.maxHp){ EAT.player.hp++; }
+    else { EAT.player.score+=30; }
+    ent.eaten=true;
+    EAT_FX.push({x:ent.x,y:ent.y,r:ent.r,kind:'core',ttl:0.5});
+    S.collect(); eatFloat(ent.x,ent.y,'❤️','#7dffa0');
+    return;
+  }
+  if(elv<0) return;
+  if(elv<plv){
+    // 吞掉
+    ent.eaten=true;
+    EAT.player.score+=eatScore(elv);
+    EAT.inv=0.5;
+    EAT.player.scaleV=0.25;
+    EAT_FX.push({x:ent.x,y:ent.y,r:ent.r,kind:ent.kind,ttl:0.45});
+    S.buy(); eatFloat(ent.x,ent.y,'+'+eatScore(elv),'#ffe9a8');
+    boom(ent.x,ent.y,'#cfe8ff',false);
+    // 晋级检查
+    while(EAT.player.idx<EAT_CHAIN.length-1 && EAT.player.score>=EAT.player.nextScore){
+      EAT.player.idx++;
+      EAT.player.kind=EAT_CHAIN[EAT.player.idx].kind;
+      EAT.player.nextScore+=eatThreshold(EAT.player.idx);
+      EAT.player.scaleV=0.4;
+      // 晋级特效（扩散光环 + 上升光粒 + 大字 + 柔光，不用碰撞爆炸粒子）
+      S.discover(); eatLevelUpFx(EAT.player.x,EAT.player.y,EAT_CHAIN[EAT.player.idx].name);
+      // 阶段 Boss（太阳）：跨出太阳系，切换星空色调
+      if(EAT_CHAIN[EAT.player.idx].boss){
+        EAT.tune=1; EAT.lastBoss=true;
+      }
+      // 晋级到黑洞 = 通关（触发超长通关动画）
+      if(EAT_CHAIN[EAT.player.idx].winLevel){
+        EAT.winSoon=3.6; // 3.6 秒仪式感晋级动画
+        EAT.dragging=null; EAT.pointer=null;
+        S.discover();
+        continue;
+      }
+      // 补充食物/威胁/星核（玩家附近补，保证晋级后立即有得吃）
+      spawnEatFood(8,true); spawnEatThreat(2,true);
+    }
+    return;
+  }
+  if(elv===plv){
+    // 同级：弹开（无伤害）
+    const dx=ent.x-EAT.player.x, dy=ent.y-EAT.player.y;
+    const l=Math.hypot(dx,dy)||1;
+    EAT.player.vx-=dx/l*220; EAT.player.vy-=dy/l*220;
+    ent.vx=dx/l*220; ent.vy=dy/l*220;
+    S.hit();
+    return;
+  }
+  // 高级：掉血
+  EAT.player.hp--;
+  EAT.inv=1.1;
+  EAT.shake=10;
+  const dx=ent.x-EAT.player.x, dy=ent.y-EAT.player.y;
+  const l=Math.hypot(dx,dy)||1;
+  EAT.player.vx-=dx/l*340; EAT.player.vy-=dy/l*340;
+  S.explode(); boom(EAT.player.x,EAT.player.y,'#ff6a6a',true);
+  eatFloat(EAT.player.x,EAT.player.y-14,'-1','#ff6a6a');
+  if(EAT.player.hp<=0){ eatLose(); }
+}
+
+function eatWin(){
+  EAT.state='win'; EAT.winT=0; S.win();
+  boom(EAT.player.x,EAT.player.y,'#ffe066',true);
+}
+function eatLose(){
+  EAT.state='lose'; EAT.loseT=0; S.lose();
+  boom(EAT.player.x,EAT.player.y,'#ff6a6a',true);
+}
+
+function eatFloat(x,y,str,color){
+  floatText(x,y,str,color);
+}
+
+// 晋级专用特效：扩散金色光环 + 柔和上升光粒 + 大字 + 全屏柔光（区别于碰撞爆炸）
+function eatLevelUpFx(x,y,name){
+  // 1) 两道扩散的金色光环（小环快速、大环稍慢更淡）
+  EAT.rings.push({x,y,ttl:0.9,life:0.9,big:false});
+  EAT.rings.push({x,y,ttl:0.75,life:0.75,big:true});
+  // 2) 柔和上升光粒（扇形朝上，不向外爆炸）
+  for(let i=0;i<22;i++){
+    const a=Math.PI/2+(Math.random()-0.5)*1.1;
+    const sp=rand(50,150);
+    G.particles.push({x:x+rand(-7,7),y:y+rand(-7,7),
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,
+      life:rand(0.6,1.0),max:1,size:rand(2.5,5),color:Math.random()<0.7?'#ffe9a8':'#fff3b0'});
+  }
+  // 3) 天体名字大字（带弹出放大）
+  floatText(x,y-36,name+'！','#fff3b0',30);
+  // 4) 全屏金色柔光
+  EAT.flash=0.55;
+}
+
+// 供给主流 update() 调用
+function eatUpdate(dt){
+  EAT.t+=dt;
+  if(EAT.shake>0) EAT.shake=Math.max(0,EAT.shake-dt*30);
+  if(EAT.slow>0) EAT.slow=Math.max(0,EAT.slow-dt);
+  if(EAT.inv>0) EAT.inv-=dt;
+  // 晋级特效更新：扩散光环衰减 / 全屏柔光衰减
+  for(let i=EAT.rings.length-1;i>=0;i--){
+    const rg=EAT.rings[i]; rg.ttl-=dt;
+    if(rg.ttl<=0) EAT.rings.splice(i,1);
+  }
+  if(EAT.flash>0) EAT.flash=Math.max(0,EAT.flash-dt*2.2);
+  const p=EAT.player;
+  // 晋级黑洞后的超长通关动画：期间冻结操作，播放膨胀吸纳视觉，倒计时结束进结算
+  if(EAT.winSoon>0){
+    EAT.winSoon-=dt;
+    // 持续扩散粒子 + 缓慢膨胀 + 背景暗化
+    p.scaleV=Math.max(p.scaleV, 1.2);
+    p.scale=1+p.scaleV;
+    if(Math.random()<0.6){
+      const a=Math.random()*TAU, rr0=rand(20,90);
+      G.particles.push({x:p.x+Math.cos(a)*rr0,y:p.y+Math.sin(a)*rr0,
+        vx:Math.cos(a)*-120,vy:Math.sin(a)*-120,life:rand(0.5,1.2),max:1,size:rand(2,5),color:'#ffe9a8'});
+    }
+    EAT.tune=Math.min(1,EAT.tune+dt*0.3);
+    if(EAT.winSoon<=0){ eatWin(); }
+    return;
+  }
+  // 牵引拖拽：目标速度模型（速度封顶 + 指数趋近 → 转弯平滑不甩、松手快速停下）
+  let tvx=0, tvy=0;
+  if(EAT.dragging){
+    const dx=EAT.dragging.lx-p.x, dy=EAT.dragging.ly-p.y;
+    const d=Math.hypot(dx,dy)||1;
+    const sp=Math.min(d*1.5, 260); // 拖越远目标速度越快，封顶 260
+    tvx=(dx/d)*sp; tvy=(dy/d)*sp;
+  }
+  // 速度向目标指数趋近：拖拽中 k=2.8/s（跟手但不甩），松手 k=5/s（快速停下）
+  const kk=EAT.dragging?2.8:5.0;
+  const kf=1-Math.exp(-kk*dt);
+  p.vx+=(tvx-p.vx)*kf;
+  p.vy+=(tvy-p.vy)*kf;
+  p.x+=p.vx*dt; p.y+=p.vy*dt;
+  // 世界边界回弹
+  const pr=eatBodyRadius(p.kind);
+  if(p.x<pr){ p.x=pr; p.vx*=-0.4; }
+  if(p.x>EAT_WORLD_W-pr){ p.x=EAT_WORLD_W-pr; p.vx*=-0.4; }
+  if(p.y<pr){ p.y=pr; p.vy*=-0.4; }
+  if(p.y>EAT_WORLD_H-pr){ p.y=EAT_WORLD_H-pr; p.vy*=-0.4; }
+  // 相机平滑跟随：玩家大致保持在屏幕中央，相机钳制在世界边界内
+  const tcx=p.x-W/2, tcy=p.y-H/2;
+  const ck=1-Math.exp(-4.0*dt);
+  EAT.cam.x+=((clamp(tcx,0,EAT_WORLD_W-W))-EAT.cam.x)*ck;
+  EAT.cam.y+=((clamp(tcy,0,EAT_WORLD_H-H))-EAT.cam.y)*ck;
+  // 缩放回弹
+  if(p.scaleV>0){ p.scaleV=Math.max(0,p.scaleV-dt*2); }
+  p.scale=1+p.scaleV*0.5;
+  // intro 阶段只移动、不吞噬碰撞
+  if(EAT.state==='intro'){
+    if(EAT.t>1.4){ EAT.state='play'; }
+    for(const f of EAT.foods){ f.x+=f.vx*dt; f.y+=f.vy*dt; f.t+=dt; } // 食物轻微漂移即可
+    return;
+  }
+  // 食物/威胁/星核移动 + 简单 AI（高级天体略微追击）
+  for(const f of EAT.foods){
+    f.x+=f.vx*dt; f.y+=f.vy*dt; f.t+=dt;
+    if(f.x<30||f.x>EAT_WORLD_W-30) f.vx*=-1;
+    if(f.y<60||f.y>EAT_WORLD_H-30) f.vy*=-1;
+    if(Math.hypot(f.x-p.x,f.y-p.y)<pr+f.r){ eatDoConsume(f.kind,f); }
+  }
+  for(const t2 of EAT.threats){
+    const elv=eatBodyLevel(t2.kind);
+    // 高级天体缓慢朝玩家漂移（有压迫感但不追击太狠）
+    if(elv>p.idx){
+      const dx=p.x-t2.x, dy=p.y-t2.y, d=Math.hypot(dx,dy)||1;
+      t2.vx+=(dx/d*14-t2.vx)*Math.min(1,dt*0.8);
+      t2.vy+=(dy/d*14-t2.vy)*Math.min(1,dt*0.8);
+    }
+    t2.x+=t2.vx*dt; t2.y+=t2.vy*dt; t2.t+=dt;
+    if(t2.x<40||t2.x>EAT_WORLD_W-40) t2.vx*=-1;
+    if(t2.y<70||t2.y>EAT_WORLD_H-40) t2.vy*=-1;
+    if(Math.hypot(t2.x-p.x,t2.y-p.y)<pr+t2.r){ eatDoConsume(t2.kind,t2); }
+  }
+  for(const c of EAT.cores){
+    c.x+=c.vx*dt; c.y+=c.vy*dt; c.t+=dt;
+    if(c.x<30||c.x>EAT_WORLD_W-30) c.vx*=-1;
+    if(c.y<60||c.y>EAT_WORLD_H-30) c.vy*=-1;
+    if(Math.hypot(c.x-p.x,c.y-p.y)<pr+c.r){ eatDoConsume('core',c); }
+  }
+  // 清理已吃
+  EAT.foods=EAT.foods.filter(f=>!f.eaten);
+  EAT.threats=EAT.threats.filter(t2=>!t2.eaten);
+  EAT.cores=EAT.cores.filter(c=>!c.eaten);
+  // 吸入特效更新（缩小消散）
+  for(let i=EAT_FX.length-1;i>=0;i--){
+    const fx=EAT_FX[i]; fx.ttl-=dt;
+    if(fx.ttl<=0) EAT_FX.splice(i,1);
+  }
+  // 动态补充：在玩家附近生成，保证视野内总有食物可吃
+  if(EAT.foods.length<50) spawnEatFood(8,true);
+  if(EAT.threats.length<9) spawnEatThreat(3,true);
+  if(EAT.cores.length<4 && Math.random()<0.02) spawnEatCore(1);
+  // 背景色调渐变（太阳系暖色 → 恒星深空冷色）
+  if(EAT.tune>0 && EAT.tune<1) EAT.tune=Math.min(1,EAT.tune+dt*0.35);
+}
+
+// 2D 精美天体绘制（复用星空关纹理绘制思路，独立实现避免破坏）
+function eatDrawBody(c,x,y,kind,r,t,opts){
+  opts=opts||{};
+  const col=eatBodyCol(kind);
+  const isBH=kind==='blackhole', isSun=kind==='sun', isRed=kind==='redgiant';
+  const isSaturn=kind==='saturn';
+  const R=r;
+  c.save(); c.translate(x,y);
+  const bob=Math.sin(t*2.2)*1.5;
+  const roll=t*0.5;
+  c.translate(0,bob);
+  // 光晕
+  if(isSun||isRed){
+    const pc=isSun?'rgba(255,190,80,':(isRed?'rgba(255,120,60,':'rgba(150,190,255,');
+    const g=c.createRadialGradient(0,0,R*0.5,0,0,R*2.2);
+    g.addColorStop(0,pc+'0.55)'); g.addColorStop(1,pc+'0)');
+    c.fillStyle=g; c.fillRect(-R*2.3,-R*2.3,R*4.6,R*4.6);
+  }
+  // 黑洞吸积盘 + 引力透镜
+  if(isBH){
+    // 吸积盘（亮环）
+    const dg=c.createLinearGradient(-R*1.6,0,R*1.6,0);
+    dg.addColorStop(0,'rgba(255,180,60,0)'); dg.addColorStop(0.5,'rgba(255,200,90,0.9)'); dg.addColorStop(1,'rgba(255,180,60,0)');
+    c.fillStyle=dg;
+    c.save(); c.rotate(-0.35);
+    c.beginPath(); c.ellipse(0,0,R*1.6,R*0.55,0,0,TAU); c.fill();
+    c.restore();
+    // 事件视界（黑球）
+    c.fillStyle='#000'; c.beginPath(); c.arc(0,0,R*0.8,0,TAU); c.fill();
+    // 光子环
+    c.strokeStyle='rgba(255,220,140,0.9)'; c.lineWidth=2.5;
+    c.beginPath(); c.arc(0,0,R*0.86,0,TAU); c.stroke();
+    c.strokeStyle='rgba(160,120,255,0.5)'; c.lineWidth=1.2;
+    c.beginPath(); c.arc(0,0,R*0.9,0,TAU); c.stroke();
+    c.restore();
+    return;
+  }
+  // 土星环（画在球后）
+  if(isSaturn){
+    c.strokeStyle='rgba(238,205,150,0.95)'; c.lineWidth=Math.max(3,R*0.16);
+    c.beginPath(); c.ellipse(0,0,R*1.9,R*0.55,-0.32,0,TAU); c.stroke();
+    c.strokeStyle='rgba(255,246,214,0.85)'; c.lineWidth=Math.max(1.6,R*0.09);
+    c.beginPath(); c.ellipse(0,0,R*1.55,R*0.45,-0.32,0,TAU); c.stroke();
+  }
+  // 星体（径向渐变受光）
+  const g=c.createRadialGradient(-R*0.3,-R*0.4,R*0.15,0,0,R*1.05);
+  g.addColorStop(0,col[0]); g.addColorStop(1,col[1]);
+  c.fillStyle=g;
+  c.beginPath(); c.arc(0,0,R,0,TAU); c.fill();
+  c.strokeStyle='rgba(0,0,0,0.35)'; c.lineWidth=1.4; c.stroke();
+  // 纹理
+  c.save(); c.beginPath(); c.arc(0,0,R,0,TAU); c.clip();
+  eatDrawBodyTexture(c,kind,R,roll);
+  c.restore();
+  // 光芒射线（太阳/红巨星/白矮星/中子星）
+  if(isSun||isRed||kind==='whitedwarf'||kind==='neutron'){
+    c.save(); c.rotate(t*(kind==='neutron'?2.2:0.4));
+    const rays=kind==='neutron'?4:12;
+    c.strokeStyle=kind==='neutron'?'rgba(180,240,255,0.85)':(isRed?'rgba(255,170,90,0.7)':'rgba(255,220,130,0.8)');
+    c.lineWidth=3;
+    for(let i=0;i<rays;i++){
+      const a=i*TAU/rays + (kind==='neutron'?t*3:0);
+      c.beginPath();
+      c.moveTo(Math.cos(a)*(R+3),Math.sin(a)*(R+3));
+      c.lineTo(Math.cos(a)*(R+9),Math.sin(a)*(R+9));
+      c.stroke();
+    }
+    c.restore();
+  }
+  // 黑洞已 return；其余画脸（可爱，正向）
+  const fR=R*0.32;
+  const eyeY=-R*0.12;
+  c.fillStyle='#fff';
+  c.beginPath(); c.ellipse(-R*0.36,eyeY,fR,fR*1.05,0,0,TAU); c.fill();
+  c.beginPath(); c.ellipse(R*0.36,eyeY,fR,fR*1.05,0,0,TAU); c.fill();
+  c.fillStyle='#241a10';
+  c.beginPath(); c.arc(-R*0.36+Math.sin(t*3)*R*0.04,eyeY,fR*0.45,0,TAU); c.fill();
+  c.beginPath(); c.arc(R*0.36+Math.cos(t*3)*R*0.04,eyeY,fR*0.45,0,TAU); c.fill();
+  c.strokeStyle='#241a10'; c.lineWidth=2;
+  c.beginPath(); c.arc(0,R*0.3,fR*0.55,0.15*Math.PI,0.85*Math.PI); c.stroke();
+  c.restore();
+}
+function eatDrawBodyTexture(c,kind,R,roll){
+  // 小行星：不规则多坑
+  if(kind==='asteroid'){
+    c.fillStyle='rgba(90,84,74,0.55)';
+    for(let i=0;i<7;i++){
+      const a=i*2.1+roll, rr0=(Math.sin(i*2.9)*0.5+0.5)*R*0.66;
+      c.beginPath(); c.arc(Math.cos(a)*rr0,Math.sin(a)*rr0,R*(0.09+0.05*((i*3)%4)/4),0,TAU); c.fill();
+    }
+  }
+  // 月球：灰坑 + 辐射纹
+  else if(kind==='moon'){
+    for(let i=0;i<9;i++){
+      const a=i*1.25+roll*0.4, rr0=(Math.sin(i*2.7)*0.5+0.5)*R*0.64;
+      c.fillStyle='rgba(140,140,150,0.6)';
+      c.beginPath(); c.arc(Math.cos(a)*rr0,Math.sin(a)*rr0,R*(0.06+0.08*((i*5)%4)/4),0,TAU); c.fill();
+      c.fillStyle='rgba(240,240,245,0.4)';
+      c.beginPath(); c.arc(Math.cos(a)*rr0-1,Math.sin(a)*rr0-1,R*0.03,0,TAU); c.fill();
+    }
+  }
+  // 水星：陨坑
+  else if(kind==='mercury'){
+    c.fillStyle='rgba(110,96,80,0.7)';
+    for(let i=0;i<11;i++){
+      const a=i*1.9+roll*0.5, rr0=(Math.sin(i*2.3)*0.5+0.5)*R*0.68;
+      c.beginPath(); c.arc(Math.cos(a)*rr0,Math.sin(a)*rr0,R*(0.08+0.07*((i*7)%5)/5),0,TAU); c.fill();
+    }
+  }
+  // 火星：火山暗斑 + 极冠
+  else if(kind==='mars'){
+    c.fillStyle='rgba(110,45,22,0.7)';
+    c.beginPath(); c.ellipse(-R*0.28+roll*2,R*0.18,R*0.28,R*0.2,0,0,TAU); c.fill();
+    c.beginPath(); c.ellipse(R*0.32-roll*2,-R*0.26,R*0.22,R*0.16,0,0,TAU); c.fill();
+    c.fillStyle='rgba(255,245,235,0.95)';
+    c.beginPath(); c.ellipse(-R*0.32,-R*0.62,R*0.34,R*0.15,-0.2,0,TAU); c.fill();
+    c.beginPath(); c.ellipse(R*0.3,R*0.66,R*0.26,R*0.11,0.2,0,TAU); c.fill();
+  }
+  // 金星：漩涡云带
+  else if(kind==='venus'){
+    for(let i=0;i<5;i++){
+      const yy=-R*0.75+i*R*0.4+(Math.sin(roll*1.3+i)*R*0.12);
+      c.strokeStyle='rgba(190,140,50,0.55)'; c.lineWidth=Math.max(2,R*0.12);
+      c.beginPath(); c.moveTo(-R,yy); c.quadraticCurveTo(0,yy+R*0.35*Math.sin(roll+i),R,yy); c.stroke();
+    }
+  }
+  // 地球：大陆 + 云带
+  else if(kind==='earth'){
+    c.fillStyle='rgba(60,150,70,0.9)';
+    c.beginPath(); c.ellipse(-R*0.2+roll*2,R*0.16,R*0.34,R*0.23,0.3,0,TAU); c.fill();
+    c.beginPath(); c.ellipse(R*0.26-roll*2,-R*0.26,R*0.25,R*0.17,-0.4,0,TAU); c.fill();
+    c.strokeStyle='rgba(255,255,255,0.7)'; c.lineWidth=Math.max(1.6,R*0.07);
+    for(let i=0;i<3;i++){
+      const yy=-R*0.6+i*R*0.55+(Math.sin(roll+i*2)*4);
+      c.beginPath(); c.moveTo(-R,yy); c.quadraticCurveTo(0,yy+R*0.15*Math.sin(roll+i),R,yy); c.stroke();
+    }
+    c.fillStyle='rgba(255,255,255,0.85)';
+    c.beginPath(); c.ellipse(0,-R*0.92,R*0.5,R*0.15,0,0,TAU); c.fill();
+  }
+  // 海王星：深蓝带 + 大暗斑
+  else if(kind==='neptune'){
+    c.fillStyle='rgba(50,110,200,0.5)';
+    for(let i=0;i<6;i++){
+      const y=-R*0.85+i*R*0.34;
+      c.fillRect(-R,y,R*2,Math.max(3,R*0.1));
+    }
+    c.fillStyle='rgba(20,60,140,0.7)';
+    c.beginPath(); c.ellipse(roll%R-R*0.18,R*0.16,R*0.2,R*0.13,-0.3,0,TAU); c.fill();
+  }
+  // 天王星：淡青竖带
+  else if(kind==='uranus'){
+    c.fillStyle='rgba(80,180,220,0.55)';
+    for(let i=0;i<6;i++){
+      const x=-R+i*R*0.36;
+      c.fillRect(x,-R,Math.max(4,R*0.14),R*2);
+    }
+    c.fillStyle='rgba(230,250,255,0.5)';
+    c.beginPath(); c.ellipse(0,-R*0.9,R*0.55,R*0.14,0,0,TAU); c.fill();
+  }
+  // 土星：金带
+  else if(kind==='saturn'){
+    c.fillStyle='rgba(215,175,110,0.55)';
+    for(let i=0;i<6;i++){
+      const y=-R*0.85+i*R*0.33+(Math.sin(roll+i)*3);
+      c.fillRect(-R,y,R*2,Math.max(3,R*0.13));
+    }
+  }
+  // 木星：云带 + 大红斑
+  else if(kind==='jupiter'){
+    const bands=[['rgba(205,150,90,0.7)',0.2],['rgba(150,95,55,0.55)',0.12],['rgba(230,195,140,0.65)',0.16],['rgba(165,110,65,0.6)',0.14],['rgba(120,80,50,0.5)',0.12],['rgba(215,170,115,0.7)',0.18]];
+    for(let i=0;i<bands.length;i++){
+      const y=-R*0.88+i*R*0.29+(Math.sin(roll*0.8+i)*R*0.02);
+      c.fillStyle=bands[i][0]; c.fillRect(-R,y,R*2,Math.max(3,R*bands[i][1]));
+    }
+    c.fillStyle='rgba(215,80,50,0.95)';
+    c.beginPath(); c.ellipse(roll%R-R*0.22,R*0.1,R*0.3,R*0.19,-0.3,0,TAU); c.fill();
+    c.fillStyle='rgba(255,170,120,0.6)';
+    c.beginPath(); c.ellipse(roll%R-R*0.22,R*0.1,R*0.2,R*0.11,-0.3,0,TAU); c.fill();
+  }
+  // 太阳：黑子 + 米粒
+  else if(kind==='sun'){
+    c.fillStyle='rgba(200,85,20,0.75)';
+    c.beginPath(); c.arc(-R*0.2+roll*3,R*0.08,R*0.16,0,TAU); c.fill();
+    c.fillStyle='rgba(255,150,60,0.7)';
+    c.beginPath(); c.arc(-R*0.2+roll*3,R*0.08,R*0.08,0,TAU); c.fill();
+    c.fillStyle='rgba(255,230,150,0.25)';
+    for(let i=0;i<16;i++){
+      const a=i*2.7+roll, rr0=(Math.sin(i*1.9)*0.5+0.5)*R*0.85;
+      c.beginPath(); c.arc(Math.cos(a)*rr0,Math.sin(a)*rr0,Math.max(1,R*0.02),0,TAU); c.fill();
+    }
+  }
+  // 红巨星：暗斑 + 对流皱纹
+  else if(kind==='redgiant'){
+    c.fillStyle='rgba(150,50,20,0.5)';
+    for(let i=0;i<8;i++){
+      const a=i*1.6+roll, rr0=(Math.sin(i*2.2)*0.5+0.5)*R*0.7;
+      c.beginPath(); c.arc(Math.cos(a)*rr0,Math.sin(a)*rr0,R*0.12,0,TAU); c.fill();
+    }
+    c.strokeStyle='rgba(255,200,140,0.35)'; c.lineWidth=Math.max(1.5,R*0.04);
+    for(let i=0;i<6;i++){
+      const a=i*1.1+roll, rr0=R*0.45;
+      c.beginPath(); c.arc(0,0,rr0,a,a+R*0.1); c.stroke();
+    }
+  }
+  // 白矮星：高亮核心
+  else if(kind==='whitedwarf'){
+    c.fillStyle='rgba(255,255,255,0.8)';
+    c.beginPath(); c.arc(0,0,R*0.4,0,TAU); c.fill();
+  }
+  // 中子星：脉冲斑
+  else if(kind==='neutron'){
+    c.fillStyle='rgba(140,240,255,0.9)';
+    c.beginPath(); c.arc(-R*0.2,R*0.1,R*0.12,0,TAU); c.fill();
+    c.beginPath(); c.arc(R*0.2,-R*0.1,R*0.12,0,TAU); c.fill();
+  }
+}
+
+// 星核绘制（回血）
+function eatDrawCore(c,x,y,r,t){
+  c.save(); c.translate(x,y);
+  const pu=1+0.15*Math.sin(t*5);
+  const g=c.createRadialGradient(0,0,r*0.2,0,0,r*1.8*pu);
+  g.addColorStop(0,'rgba(140,255,170,0.65)'); g.addColorStop(1,'rgba(140,255,170,0)');
+  c.fillStyle=g; c.fillRect(-r*2,-r*2,r*4,r*4);
+  c.fillStyle='#a8ffb8'; c.beginPath(); c.arc(0,0,r,0,TAU); c.fill();
+  c.strokeStyle='#1a8a3a'; c.lineWidth=1.5; c.stroke();
+  c.fillStyle='#ffffff';
+  // 心形
+  c.save(); c.scale(r/9,r/9);
+  c.beginPath();
+  c.moveTo(0,3);
+  c.bezierCurveTo(-5,-2,-8,-1,-8,2);
+  c.bezierCurveTo(-8,4,-4,7,0,8);
+  c.bezierCurveTo(4,7,8,4,8,2);
+  c.bezierCurveTo(8,-1,5,-2,0,3);
+  c.closePath(); c.fill();
+  c.restore();
+  c.restore();
+}
+
+
+// ---------- 第 5 关 渲染 ----------
+function eatDrawBackground(t){
+  // 背景色调随阶段渐变：太阳系暖紫 → 恒星深空冷蓝（屏幕坐标渐变）
+  const tune=EAT.tune;
+  const r1=lerpC(10,6,tune), g1=lerpC(12,4,tune), b1=lerpC(34,24,tune);
+  const r2=lerpC(34,16,tune), g2=lerpC(20,12,tune), b2=lerpC(64,52,tune);
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'rgb('+r1+','+g1+','+b1+')');
+  g.addColorStop(1,'rgb('+r2+','+g2+','+b2+')');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  const cx=EAT.cam.x, cy=EAT.cam.y;
+  // 星云（世界坐标，只画视口内的）
+  for(const n of EAT.nebulae){
+    const nx=n.x-cx, ny=n.y-cy;
+    if(nx<-n.r*2||nx>W+n.r*2||ny<-n.r*2||ny>H+n.r*2) continue;
+    const ng=ctx.createRadialGradient(nx,ny,5,nx,ny,n.r);
+    ng.addColorStop(0,n.c); ng.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=ng; ctx.fillRect(nx-n.r,ny-n.r,n.r*2,n.r*2);
+  }
+  // 星星（世界坐标，只画视口内的）
+  for(const s of EAT.stars){
+    const sx=s.x-cx, sy=s.y-cy;
+    if(sx<-2||sx>W+2||sy<-2||sy>H+2) continue;
+    const a=0.3+0.7*Math.abs(Math.sin(t*0.8+s.tw));
+    ctx.globalAlpha=a;
+    ctx.fillStyle='#dfe9ff';
+    ctx.fillRect(sx,sy,s.r,s.r);
+  }
+  ctx.globalAlpha=1;
+}
+function lerpC(a,b,t){ return Math.round(a+(b-a)*t); }
+
+function eatDrawHUD(t){
+  const p=EAT.player;
+  // 顶部栏
+  ctx.fillStyle='rgba(10,14,30,0.55)'; ctx.fillRect(0,0,W,60);
+  // 当前天体名（大字 + 图标）
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.save(); ctx.translate(30,30); ctx.scale(0.5,0.5);
+  eatDrawBody(ctx,0,0,p.kind,eatBodyRadius(p.kind),t,{});
+  ctx.restore();
+  ctx.font='bold 22px "Microsoft YaHei",sans-serif'; ctx.fillStyle='#fff';
+  ctx.fillText(EAT_CHAIN[p.idx].name,58,24);
+  // 血条（红心）
+  ctx.font='18px sans-serif';
+  let hx=170;
+  for(let i=0;i<p.maxHp;i++){
+    if(i<p.hp){ ctx.fillText('❤️',hx,30); } else { ctx.globalAlpha=0.25; ctx.fillText('❤️',hx,30); ctx.globalAlpha=1; }
+    hx+=26;
+  }
+  // 晋级进度条
+  const pxx=340, pw=210, ph=14, py=22;
+  ctx.fillStyle='rgba(0,0,0,0.4)'; rr(ctx,pxx,py,pw,ph,7); ctx.fill();
+  const prog=clamp(p.score/p.nextScore,0,1);
+  ctx.fillStyle='#ffd93d'; rr(ctx,pxx+2,py+2,(pw-4)*prog,ph-4,5); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1; rr(ctx,pxx,py,pw,ph,7); ctx.stroke();
+  ctx.font='13px "Microsoft YaHei",sans-serif'; ctx.fillStyle='#fff'; ctx.textAlign='left';
+  ctx.fillText('⭐ '+p.score+' / '+p.nextScore,pxx,py+ph+12);
+  // 下一级目标图标（可吞目标）；满级(黑洞)时显示「即将通关」
+  if(p.idx<EAT_CHAIN.length-1){
+    ctx.textAlign='center'; ctx.fillStyle='rgba(255,233,168,0.9)'; ctx.font='12px "Microsoft YaHei",sans-serif';
+    ctx.fillText('吃掉它们涨分晋级 →',576,30);
+    const nextLv=p.idx+1;
+    ctx.save(); ctx.translate(710,42); ctx.scale(0.5,0.5);
+    eatDrawBody(ctx,0,0,EAT_CHAIN[nextLv].kind,eatBodyRadius(EAT_CHAIN[nextLv].kind),t,{});
+    ctx.restore();
+  } else {
+    ctx.textAlign='center'; ctx.fillStyle='rgba(255,233,168,0.95)'; ctx.font='bold 13px "Microsoft YaHei",sans-serif';
+    ctx.fillText('⭐⭐ 已到最大级别！',620,30);
+  }
+  // 引导提示（intro 阶段）
+  if(EAT.state==='intro'){
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.globalAlpha=clamp(EAT.t,0,1);
+    ctx.font='bold 30px "Microsoft YaHei",sans-serif';
+    ctx.strokeStyle='rgba(0,0,0,0.8)'; ctx.lineWidth=7;
+    ctx.strokeText('第 5 关 · 天体吞噬',W/2,170);
+    ctx.fillStyle='#fff'; ctx.fillText('第 5 关 · 天体吞噬',W/2,170);
+    ctx.font='18px "Microsoft YaHei",sans-serif'; ctx.fillStyle='#ffe066';
+    ctx.fillText('拖住那颗带光环的月球（你的天体），吃掉更小的天体！',W/2,210);
+    ctx.globalAlpha=1;
+  }
+  // 开局引导箭头：指向玩家自己的天体（intro 及进入 play 后前几秒持续显示，避免"不知道拖哪个"）
+  if(EAT.state!=='win' && EAT.state!=='lose' && EAT.t<5){
+    const p2=EAT.player;
+    const pr2=eatBodyRadius(p2.kind)*p2.scale;
+    // 世界坐标转屏幕坐标（玩家由相机大致居中，直接减相机偏移）
+    const px2=p2.x-EAT.cam.x, py2=p2.y-EAT.cam.y;
+    const alpha2=clamp(EAT.t<1.4?EAT.t:Math.max(0,5-EAT.t),0,1);
+    if(alpha2>0.02){
+      ctx.save();
+      ctx.globalAlpha=alpha2;
+      const bob2=Math.sin(t*4.5)*5;
+      // 指示线（从玩家右侧引出）
+      const sx=px2+pr2+4, sy=py2+bob2*0.4;
+      const ex=px2+pr2+52, ey=py2-26+bob2;
+      ctx.strokeStyle='#7ee8ff'; ctx.lineWidth=3; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
+      // 箭头头部（指向玩家）
+      ctx.fillStyle='#7ee8ff';
+      ctx.beginPath();
+      ctx.moveTo(sx+7,sy+9); ctx.lineTo(sx+15,sy); ctx.lineTo(sx+7,sy-9);
+      ctx.closePath(); ctx.fill();
+      // 文字
+      ctx.font='bold 17px "Microsoft YaHei",sans-serif';
+      ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.strokeStyle='rgba(0,0,0,0.85)'; ctx.lineWidth=5;
+      ctx.strokeText('← 你的天体，拖我！',ex+8,ey+4);
+      ctx.fillStyle='#7ee8ff'; ctx.fillText('← 你的天体，拖我！',ex+8,ey+4);
+      ctx.restore();
+    }
+  }
+  // 阶段 Boss 提示（跨出太阳系）
+  if(EAT.lastBoss && EAT.state==='play'){
+    const a=clamp(EAT.tune,0,1);
+    ctx.globalAlpha=a;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='bold 26px "Microsoft YaHei",sans-serif';
+    ctx.strokeStyle='rgba(0,0,0,0.8)'; ctx.lineWidth=6;
+    ctx.strokeText('🌌 离开太阳系！外面还有更大的天体',W/2,400);
+    ctx.fillStyle='#ffe066'; ctx.fillText('🌌 离开太阳系！外面还有更大的天体',W/2,400);
+    ctx.globalAlpha=1;
+  }
+}
+
+function eatDrawWorld(t){
+  const p=EAT.player;
+  // 绘制顺序：背景 → 食物(低) → 威胁(高) → 星核 → 玩家
+  for(const f of EAT.foods){
+    eatDrawBody(ctx,f.x,f.y,f.kind,eatBodyRadius(f.kind),t+f.t,{});
+  }
+  for(const t2 of EAT.threats){
+    eatDrawBody(ctx,t2.x,t2.y,t2.kind,eatBodyRadius(t2.kind),t+t2.t,{});
+  }
+  for(const c of EAT.cores){
+    eatDrawCore(ctx,c.x,c.y,c.r,t+c.t);
+  }
+  // 玩家（带拖拽牵引线）
+  const pr=eatBodyRadius(p.kind)*p.scale;
+  if(EAT.dragging){
+    const dx=EAT.dragging.lx-p.x, dy=EAT.dragging.ly-p.y;
+    const d=Math.hypot(dx,dy)||1;
+    const nx=dx/d, ny=dy/d;
+    // 虚线牵引
+    ctx.save();
+    ctx.strokeStyle='rgba(200,240,255,0.7)'; ctx.lineWidth=2;
+    ctx.setLineDash([6,6]);
+    ctx.beginPath(); ctx.moveTo(p.x+nx*pr,p.y+ny*pr);
+    ctx.lineTo(p.x+dx,p.y+dy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 终点箭头
+    const ax=EAT.dragging.lx, ay=EAT.dragging.ly;
+    ctx.fillStyle='rgba(200,240,255,0.9)';
+    ctx.beginPath(); ctx.arc(ax,ay,5,0,TAU); ctx.fill();
+    ctx.restore();
+  }
+  // 玩家天体（受击闪烁）
+  if(EAT.inv>0 && Math.floor(t*20)%2===0){
+    ctx.globalAlpha=0.5;
+  }
+  ctx.save(); ctx.translate(p.x,p.y);
+  ctx.scale(p.scale,p.scale);
+  ctx.translate(-p.x,-p.y);
+  eatDrawBody(ctx,p.x,p.y,p.kind,eatBodyRadius(p.kind),t,{});
+  ctx.restore();
+  ctx.globalAlpha=1;
+  // 玩家常驻高亮：呼吸光环 + 金色旋转虚线环（与满场小行星明显区分，引导拖拽）
+  const glowR=pr+10+Math.sin(t*3.2)*3;
+  ctx.save();
+  ctx.globalAlpha=0.85;
+  const gg=ctx.createRadialGradient(p.x,p.y,pr*0.4,p.x,p.y,glowR+12);
+  gg.addColorStop(0,'rgba(120,230,255,0)');
+  gg.addColorStop(0.72,'rgba(120,230,255,0.30)');
+  gg.addColorStop(1,'rgba(120,230,255,0)');
+  ctx.fillStyle=gg;
+  ctx.beginPath(); ctx.arc(p.x,p.y,glowR+12,0,TAU); ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.globalAlpha=0.95;
+  ctx.strokeStyle='#ffd93d'; ctx.lineWidth=2;
+  ctx.setLineDash([7,7]);
+  ctx.lineDashOffset=-t*26;
+  ctx.beginPath(); ctx.arc(p.x,p.y,glowR,0,TAU); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+  ctx.globalAlpha=1;
+  // 无敌提示圈
+  if(EAT.inv>0){
+    ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(p.x,p.y,pr+8,0,TAU); ctx.stroke();
+  }
+}
+
+function eatRender(t){
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  if(EAT.shake>0) ctx.translate(rand(-EAT.shake,EAT.shake),rand(-EAT.shake,EAT.shake));
+  eatDrawBackground(t);
+  // 世界坐标偏移：视口跟随相机
+  ctx.translate(-EAT.cam.x,-EAT.cam.y);
+  eatDrawWorld(t);
+  // 晋级扩散光环（世界坐标，画在天体之上）
+  for(const rg of EAT.rings){
+    const k=clamp(rg.ttl/rg.life,0,1);
+    const rr2=6+(1-k)*(rg.big?150:95);
+    ctx.globalAlpha=k*0.85;
+    ctx.strokeStyle=rg.big?'rgba(255,233,168,0.75)':'#ffe9a8';
+    ctx.lineWidth=rg.big?3:4;
+    ctx.beginPath(); ctx.arc(rg.x,rg.y,rr2,0,TAU); ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+  // 吸入特效（被吞天体缩小消散）
+  for(const fx of EAT_FX){
+    const k=fx.ttl/0.5;
+    ctx.globalAlpha=clamp(k,0,1);
+    eatDrawBody(ctx,fx.x,fx.y,fx.kind,fx.r*k,t,{});
+  }
+  ctx.globalAlpha=1;
+  // 粒子（世界坐标）
+  for(const pt of G.particles){
+    const a=clamp(pt.life/pt.max,0,1);
+    ctx.globalAlpha=a; ctx.fillStyle=pt.color;
+    ctx.beginPath(); ctx.arc(pt.x,pt.y,pt.size*a,0,TAU); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  // 浮动文字（世界坐标）
+  for(const f of G.floats){
+    const a=clamp(f.life/1,0,1);
+    ctx.globalAlpha=a; ctx.fillStyle=f.color; ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.lineWidth=3;
+    ctx.font='bold '+(f.size||18)+'px "Microsoft YaHei",sans-serif'; ctx.textAlign='center';
+    ctx.strokeText(f.str,f.x,f.y-(1-a)*26); ctx.fillText(f.str,f.x,f.y-(1-a)*26);
+  }
+  ctx.globalAlpha=1;
+  ctx.restore();
+  // HUD 为屏幕坐标（相机恢复后绘制）
+  eatDrawHUD(t);
+  // 晋级全屏金色柔光（屏幕坐标，覆盖 HUD 之上的光效）
+  if(EAT.flash>0){
+    ctx.globalAlpha=clamp(EAT.flash*0.5,0,1);
+    const fg=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.75);
+    fg.addColorStop(0,'rgba(255,233,168,0.85)');
+    fg.addColorStop(1,'rgba(255,233,168,0)');
+    ctx.fillStyle=fg; ctx.fillRect(0,0,W,H);
+    ctx.globalAlpha=1;
+  }
+  // 晋级黑洞的仪式感动画（吞噬吸纳 + 全屏收缩光晕）
+  if(EAT.winSoon>0) eatDrawWinSoon(t);
+  if(EAT.state==='win') eatDrawWin(t);
+  if(EAT.state==='lose') eatDrawLose(t);
+}
+
+// 中子星→黑洞 晋级通关动画：全屏向中心吸纳的粒子洪流 + 旋转光环
+function eatDrawWinSoon(t){
+  const left=EAT.winSoon;
+  const total=3.6;
+  const prog=1-left/total; // 0→1
+  const p=EAT.player;
+  // 玩家世界坐标转屏幕坐标（相机偏移）
+  const px=p.x-EAT.cam.x, py=p.y-EAT.cam.y;
+  // 暗化背景，突出黑洞
+  ctx.fillStyle='rgba(0,0,0,'+(0.2+0.5*prog)+')'; ctx.fillRect(0,0,W,H);
+  // 向玩家（黑洞）螺旋吸纳的粒子
+  for(let i=0;i<70;i++){
+    const ang=i*0.55+t*2.2;
+    const rr0=(1-prog)*340 + prog*30;
+    const x=px+Math.cos(ang)*rr0, y=py+Math.sin(ang)*rr0*0.8;
+    ctx.globalAlpha=clamp(1-prog*0.85,0.1,1);
+    ctx.fillStyle=i%3===0?'#ffe9a8':'#cfe8ff';
+    ctx.beginPath(); ctx.arc(x,y,2.2-prog*1.4,0,TAU); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  // 旋转吸积盘光环
+  ctx.save(); ctx.translate(px,py); ctx.rotate(t*1.5);
+  const rg=ctx.createLinearGradient(-130,0,130,0);
+  rg.addColorStop(0,'rgba(255,180,60,0)'); rg.addColorStop(0.5,'rgba(255,210,100,'+(0.4+0.5*prog)+')'); rg.addColorStop(1,'rgba(255,180,60,0)');
+  ctx.strokeStyle=rg; ctx.lineWidth=4+6*prog;
+  ctx.beginPath(); ctx.ellipse(0,0,130,40,0,0,TAU); ctx.stroke();
+  ctx.restore();
+  // 大字
+  const a=clamp(prog*2,0,1);
+  ctx.globalAlpha=a;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font='bold '+Math.round(30+22*prog)+'px "Microsoft YaHei",sans-serif';
+  ctx.strokeStyle='rgba(0,0,0,0.85)'; ctx.lineWidth=8;
+  ctx.strokeText('🌌 吞噬一切，化身黑洞',W/2,H*0.32);
+  ctx.fillStyle='#ffe066'; ctx.fillText('🌌 吞噬一切，化身黑洞',W/2,H*0.32);
+  ctx.globalAlpha=1;
+}
+
+function eatDrawWin(t){
+  if(EAT.winT===0) EAT.winT=t;
+  const el=t-EAT.winT;
+  // 满足感通关动画：星光爆发扩散
+  ctx.fillStyle='rgba(8,10,22,'+clamp(0.75,0,1)+')';
+  ctx.fillRect(0,0,W,H);
+  // 环绕星光
+  const cx=W/2, cy=H/2-40;
+  const rad=Math.min(el*220, 380);
+  for(let i=0;i<40;i++){
+    const a=i*TAU/40+el*0.6;
+    const r=rad*(0.6+0.4*Math.sin(el*3+i));
+    ctx.globalAlpha=clamp(1-el*0.02,0,1);
+    ctx.fillStyle='#ffe9a8';
+    const sx=cx+Math.cos(a)*r, sy=cy+Math.sin(a)*r*0.7;
+    ctx.beginPath(); ctx.arc(sx,sy,2.5,0,TAU); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  // 标题
+  const scale=clamp(el/0.6,0,1);
+  ctx.save(); ctx.translate(cx,cy); ctx.scale(scale,scale);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font='bold 52px "Microsoft YaHei",sans-serif';
+  ctx.strokeStyle='rgba(0,0,0,0.8)'; ctx.lineWidth=9;
+  ctx.strokeText('🌌 通关！',0,0);
+  ctx.fillStyle='#ffe066'; ctx.fillText('🌌 通关！',0,0);
+  ctx.restore();
+  ctx.font='22px "Microsoft YaHei",sans-serif'; ctx.fillStyle='#fff';
+  ctx.textAlign='center'; ctx.fillText('你吞掉了超大质量黑洞！',W/2,cy+70);
+  ctx.fillText('成为宇宙之王 🏆',W/2,cy+100);
+  // 按钮：重玩 / 返回
+  if(el>1.2){
+    const by=H-120;
+    eatBtn(W/2-130,by,120,50,'重玩',()=>{ eatReset(); EAT.state='intro'; setHint(HINT_EAT); });
+    eatBtn(W/2+10,by,120,50,'返回',()=>{ G.state='select'; setHint(HINT_BATTLE); });
+  }
+}
+function eatDrawLose(t){
+  ctx.fillStyle='rgba(8,10,22,0.78)'; ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font='bold 44px "Microsoft YaHei",sans-serif';
+  ctx.strokeStyle='rgba(0,0,0,0.8)'; ctx.lineWidth=8;
+  ctx.strokeText('💔 游戏结束',W/2,240);
+  ctx.fillStyle='#ff8c8c'; ctx.fillText('💔 游戏结束',W/2,240);
+  ctx.font='20px "Microsoft YaHei",sans-serif'; ctx.fillStyle='#fff';
+  ctx.fillText('你的天体被更大的天体击败了',W/2,300);
+  const by=H-120;
+  eatBtn(W/2-130,by,120,50,'重玩',()=>{ eatReset(); EAT.state='intro'; setHint(HINT_EAT); });
+  eatBtn(W/2+10,by,120,50,'返回',()=>{ G.state='select'; setHint(HINT_BATTLE); });
+}
+function eatBtn(x,y,w,h,txt,act){
+  const hover=G.mouse.x>x&&G.mouse.x<x+w&&G.mouse.y>y&&G.mouse.y<y+h;
+  ctx.fillStyle=hover?'#ffe08a':'rgba(255,217,61,0.92)';
+  rr(ctx,x,y,w,h,24); ctx.fill();
+  ctx.strokeStyle='#8a6a10'; ctx.lineWidth=3; rr(ctx,x,y,w,h,24); ctx.stroke();
+  ctx.font='bold 20px "Microsoft YaHei",sans-serif'; ctx.fillStyle='#5a3a00';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(txt,x+w/2,y+h/2+2);
+}
+
+// ---------- 第 5 关 输入 ----------
+function eatPointerDown(mx,my,id){
+  G.mouse.x=mx; G.mouse.y=my;
+  // 结算画面按钮（重玩 / 返回）
+  if(EAT.state==='win'||EAT.state==='lose'){
+    const by=H-120;
+    if(mx>W/2-130&&mx<W/2-10&&my>by&&my<by+50){ eatReset(); EAT.state='intro'; setHint(HINT_EAT); S.select(); return; }
+    if(mx>W/2+10&&mx<W/2+130&&my>by&&my<by+50){ G.state='select'; setHint(HINT_BATTLE); S.select(); return; }
+    return;
+  }
+  if(EAT.state!=='play' && EAT.state!=='intro') return;
+  const p=EAT.player;
+  // 按下玩家天体附近一定半径即触发拖拽牵引（指针转世界坐标）
+  const pr=eatBodyRadius(p.kind)+26;
+  const wmx=mx+EAT.cam.x, wmy=my+EAT.cam.y;
+  if(Math.hypot(wmx-p.x,wmy-p.y)<=pr){
+    EAT.pointer=id;
+    EAT.dragging={lx:wmx,ly:wmy};
+  }
+}
+function eatPointerMove(mx,my,id){
+  G.mouse.x=mx; G.mouse.y=my;
+  if(EAT.dragging && EAT.pointer===id){
+    EAT.dragging.lx=mx+EAT.cam.x; EAT.dragging.ly=my+EAT.cam.y;
+  }
+}
+function eatPointerUp(id){
+  if(EAT.pointer===id){
+    EAT.pointer=null;
+    EAT.dragging=null;
+  }
+}
+
 // ============================================================
 // 第 4 关 · 探索太阳系（独立探索模式，无战斗）
 // 伪 3D 自由视角：飞船自由飞行、收集星尘、点亮行星、行星商店
@@ -1566,6 +2566,8 @@ const EX_SUN={id:'sun',name:'太阳',main:false,kind:'sun',r:420,x:0,y:0,z:0,rot
 
 const HINT_BATTLE='🖱️ 左键/触摸 选择并种植蘑菇 · 点击阳光收集 · 右键/点空白 取消选择 · <b>1-5</b> 快速选种 · <b>空格</b> 暂停';
 const HINT_EXPLORE='🎮 左半屏摇杆 / <b>WASD</b>：移动 · 按住任意处拖动：转动视角(含上下俯仰) · 滚轮缩放 · 靠近行星减速停靠购物';
+const HINT_EAT='🪐 按住你自己的天体拖动：牵引方向就是飞行方向 · 拖越远冲越快 · 吃掉更小的天体涨分晋级 · 撞到更大的会掉血';
+function startEat(){ eatReset(); G.state='eat'; setHint(HINT_EAT); S.select(); }
 function setHint(html){ const el=document.getElementById('hint'); if(el) el.innerHTML=html; }
 
 const EX={
@@ -2323,6 +3325,7 @@ function update(dt){
   for(const p of G.particles){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=240*dt; p.life-=dt; }
   G.particles=G.particles.filter(p=>p.life>0);
   if(G.state==='explore'){ exUpdate(dt); return; }
+  if(G.state==='eat'){ eatUpdate(dt); return; }
   if(G.state==='intro'){
     G.introT+=dt;
     if(G.introT>1.2){ G.state='playing'; G.waveDelay=6; }
@@ -2377,10 +3380,17 @@ function updateHover(mx,my){
 canvas.addEventListener('pointermove',e=>{
   const p=pointerPos(e);
   if(G.state==='explore') exPointerMove(p.x,p.y,e.pointerId);
+  else if(G.state==='eat') eatPointerMove(p.x,p.y,e.pointerId);
   else updateHover(p.x,p.y);
 });
-canvas.addEventListener('pointerup',e=>{ if(G.state==='explore') exPointerUp(e.pointerId); });
-canvas.addEventListener('pointercancel',e=>{ if(G.state==='explore') exPointerCancel(e.pointerId); });
+canvas.addEventListener('pointerup',e=>{
+  if(G.state==='explore') exPointerUp(e.pointerId);
+  else if(G.state==='eat') eatPointerUp(e.pointerId,p=>pointerPos(e));
+});
+canvas.addEventListener('pointercancel',e=>{
+  if(G.state==='explore') exPointerCancel(e.pointerId);
+  else if(G.state==='eat') eatPointerUp(e.pointerId);
+});
 canvas.addEventListener('wheel',e=>{
   if(G.state==='explore'){ e.preventDefault(); EX.cam.focal=clamp(EX.cam.focal*Math.exp(e.deltaY*0.0012),250,950); }
 },{passive:false});
@@ -2391,6 +3401,7 @@ canvas.addEventListener('pointerdown',e=>{
   e.preventDefault();
   const p=pointerPos(e);
   if(G.state==='explore'){ exHandleDown(p.x,p.y,e.pointerId,e.pointerType); return; }
+  if(G.state==='eat'){ eatPointerDown(p.x,p.y,e.pointerId); return; }
   updateHover(p.x,p.y);
   handleClick(p.x,p.y);
 });
@@ -2425,11 +3436,11 @@ function handleClick(mx,my){
     return;
   }
   if(G.state==='select'){
-    const cw=180,gap=16,x0=16,y=200;
-    for(let i=0;i<4;i++){
+    const cw=148,gap=9,x0=13,y=200;
+    for(let i=0;i<5;i++){
       const x=x0+i*(cw+gap);
       if(mx>x&&mx<x+cw&&my>y&&my<y+300){
-        if(i<3) startLevel(i); else startExplore();
+        if(i<3) startLevel(i); else if(i===3) startExplore(); else startEat();
         S.select(); return;
       }
     }
