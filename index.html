@@ -2730,6 +2730,8 @@ function eatDrawBlackhole(t){
   ctx.font='18px "Microsoft YaHei",sans-serif'; ctx.fillStyle='#cfe8ff';
   ctx.fillText('已吞噬 '+EAT.bhCount+' 个天体 · 宇宙正在被你吸入',W/2,H*0.3+34);
 }
+
+function eatDrawWin(t){
   if(EAT.winT===0) EAT.winT=t;
   const el=t-EAT.winT;
   // 满足感通关动画：星光爆发扩散
