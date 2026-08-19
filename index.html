@@ -1861,12 +1861,12 @@ function eatUpdate(dt){
     const pr=eatBodyRadius(p.kind);
     // 黑洞缓慢呼吸膨胀（视觉）
     p.scaleV=Math.max(p.scaleV,0.5);
-    // 引力常数：越近越强，封顶避免数值爆炸
-    const G0=160000, gMax=1100, vMax=680;
+    // 引力常数：越近越强（1/d 衰减），封顶避免数值爆炸，整体够强以吸附全场
+    const G0=90000, gMax=1600, vMax=1100;
     const devour=(arr)=>{
       for(const e of arr){
         const dx=p.x-e.x, dy=p.y-e.y, d=Math.hypot(dx,dy)||1;
-        const g=clamp(G0/(d*d),0,gMax);
+        const g=clamp(G0/d,0,gMax);
         e.vx+=dx/d*g*dt; e.vy+=dy/d*g*dt;
         const sp=Math.hypot(e.vx,e.vy);
         if(sp>vMax){ e.vx=e.vx/sp*vMax; e.vy=e.vy/sp*vMax; }
